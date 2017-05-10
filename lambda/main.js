@@ -117,20 +117,20 @@ function stopSession(callback) {
     var repromptText = "";
 
     callback(sessionAttributes,
-             shared.buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));
+             buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));
 }
 
 function getWelcomeResponse(callback) {
     // If we wanted to initialize the session to have some attributes we could add those here.
     var sessionAttributes = {};
     var cardTitle = "Welcome";
-    var speechOutput = "to be defined";
+    var speechOutput = "please ask the food computer something";
     // If the user either does not reply to the welcome message, they will be prompted again.
-    var repromptText = "to be defined";
+    var repromptText = "please ask the food computer something, for example to start a recipe";
     var shouldEndSession = false;
 
     callback(sessionAttributes,
-             shared.buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));
+             buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));
 }
 
 /*
@@ -142,20 +142,47 @@ function startRecipe(intent, session, callback) {
     var shouldEndSession = true;
     var speechOutput = "";
 
-    var xhttp = new XMLHttpRequest();
-    url = HOST + PORT + "/_openag/api/0.0.1/service/environments/environment_1/start_recipe";
-    xhttp.open("POST", url, true);
-    var data = '["test_lights"]';
-    xhttp.send(data);
-    xhttp.onreadystatechange = function() {
-      if (this.readyState == 4 && this.status == 200) {
-        speechOutput = "started recipe";
-      } else {
-        speechOutput = "error, could not start recipe";
+    var http = require("http");
+
+    var postData = '["test_lights"]'; // name of recipe to start
+
+    var options = {
+      hostname: HOST,
+      port: PORT,
+      path: "/_openag/api/0.0.1/service/environments/environment_1/start_recipe",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": postData.length
       }
-      callback(sessionAttributes,
-               shared.buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
-    }
+    };
+
+    var req = http.request(options, function (res) {
+      var resStr = "";
+
+      res.on("data", function (data) {
+        resStr += data; // save data from response
+      });
+
+      res.on("end", function () {
+        var obj = JSON.parse(resStr);
+        if (obj.success) {
+          speechOutput = "started recipe";
+        } else {
+          speechOutput = "error, could not start recipe";
+        }
+        callback(sessionAttributes,
+                 buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
+      });
+    });
+
+    req.on('error', function(e) {
+      console.log('problem with http request: ' + e.message);
+    });
+
+    req.write(postData);
+
+    req.end();
 }
 
 // --------------- global variables and commonly used functions -----------------------
