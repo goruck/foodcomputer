@@ -1,0 +1,50 @@
+{
+  "intents": [
+    {
+      "name": "AMAZON.CancelIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.HelpIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.StopIntent",
+      "samples": []
+    },
+    {
+      "name": "StartRecipe",
+      "samples": [
+        "recipe",
+        "start recipe"
+      ],
+      "slots": []
+    }
+  ],
+  "prompts": [
+    {
+      "id": "Confirm.Intent-StartRecipe",
+      "promptVersion": "1.0",
+      "definitionVersion": "1.0",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "do you want to start a recipe?"
+        }
+      ]
+    }
+  ],
+  "dialog": {
+    "version": "1.0",
+    "intents": [
+      {
+        "name": "StartRecipe",
+        "confirmationRequired": true,
+        "prompts": {
+          "confirm": "Confirm.Intent-StartRecipe"
+        },
+        "slots": []
+      }
+    ]
+  }
+}
