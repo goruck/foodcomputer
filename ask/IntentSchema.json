@@ -13,12 +13,220 @@
       "samples": []
     },
     {
+      "name": "GetDesiredParameterValue",
+      "samples": [
+        "value for desired {parameter} ",
+        "to get value of desired {parameter} ",
+        "to fetch value of desired {parameter} ",
+        "for value of desired {parameter} ",
+        "to get value for desired {parameter} ",
+        "value of desired {parameter} ",
+        "for the value of desired {parameter} ",
+        "the value of desired {parameter} ",
+        "value desired {parameter} ",
+        "the value desired {parameter} ",
+        "to get the value of desired {parameter} ",
+        "to fetch the value of desired {parameter} ",
+        "to fetch the value for desired {parameter} ",
+        "for desired {parameter} ",
+        "for the desired {parameter} ",
+        "the desired {parameter} ",
+        "its desired {parameter} ",
+        "what its desired {parameter} is",
+        "what is its desired {parameter}",
+        "for its desired {parameter} ",
+        "desired {parameter} "
+      ],
+      "slots": [
+        {
+          "name": "parameter",
+          "type": "PARAMETER_SLOT_TYPE",
+          "samples": []
+        }
+      ]
+    },
+    {
+      "name": "GetMeasuredParameterValue",
+      "samples": [
+        "value for measured {parameter} ",
+        "to get value of measured {parameter} ",
+        "to fetch value of measured {parameter} ",
+        "for value of measured {parameter} ",
+        "to get value for measured {parameter} ",
+        "value of measured {parameter} ",
+        "for the value of measured {parameter} ",
+        "the value of measured {parameter} ",
+        "value measured {parameter} ",
+        "the value measured {parameter} ",
+        "to get the value of measured {parameter} ",
+        "to fetch the value of measured {parameter} ",
+        "to fetch the value for measured {parameter} ",
+        "for measured {parameter} ",
+        "for the measured {parameter} ",
+        "the measured {parameter} ",
+        "its measured {parameter} ",
+        "what its measured {parameter} is",
+        "what is its measured {parameter}",
+        "for its measured {parameter} ",
+        "value for {parameter} ",
+        "to get value of {parameter} ",
+        "to fetch value of {parameter} ",
+        "for value of {parameter} ",
+        "to get value for {parameter} ",
+        "value of {parameter} ",
+        "for the value of {parameter} ",
+        "the value of {parameter} ",
+        "value {parameter} ",
+        "the value {parameter} ",
+        "to get the value of {parameter} ",
+        "to fetch the value of {parameter} ",
+        "to fetch the value for {parameter} ",
+        "for {parameter} ",
+        "for the {parameter} ",
+        "the {parameter} ",
+        "its {parameter} ",
+        "what its {parameter} is",
+        "what is its {parameter}",
+        "for its {parameter} ",
+        "measured {parameter} "
+      ],
+      "slots": [
+        {
+          "name": "parameter",
+          "type": "PARAMETER_SLOT_TYPE",
+          "samples": []
+        }
+      ]
+    },
+    {
       "name": "StartRecipe",
       "samples": [
-        "recipe",
-        "start recipe"
+        "recipe {recipe} ",
+        "start recipe {recipe} ",
+        "to start recipe {recipe} ",
+        "for recipe {recipe} ",
+        "to start the recipe {recipe} ",
+        "for the recipe {recipe} "
       ],
-      "slots": []
+      "slots": [
+        {
+          "name": "recipe",
+          "type": "AMAZON.Food",
+          "samples": []
+        }
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "PARAMETER_SLOT_TYPE",
+      "values": [
+        {
+          "name": {
+            "value": "air humidity"
+          }
+        },
+        {
+          "name": {
+            "value": "air temperature"
+          }
+        },
+        {
+          "name": {
+            "value": "light illuminance"
+}
+        },
+        {
+          "name": {
+            "value": "water electrical conductivity"
+          }
+        },
+        {
+          "name": {
+            "value": "water potential hydrogen"
+          }
+        },
+        {
+          "name": {
+            "value": "water temperature"
+          }
+        },
+        {
+          "name": {
+            "value": "white light intensity"
+          }
+        },
+        {
+          "name": {
+            "value": "blue light intensity"
+          }
+        },
+        {
+          "name": {
+            "value": "red light intensity"
+          }
+        },
+        {
+          "name": {
+            "value": "air carbon dioxide"
+          }
+        },
+        {
+          "name": {
+            "value": "water level high"
+          }
+        },
+        {
+          "name": {
+            "value": "temperature"
+          }
+        },
+        {
+          "name": {
+            "value": "humidity"
+          }
+        },
+        {
+          "name": {
+            "value": "carbon dioxide"
+          }
+        },
+        {
+          "name": {
+            "value": "water conductivity"
+          }
+        },
+        {
+          "name": {
+            "value": "red intensity"
+          }
+        },
+        {
+          "name": {
+            "value": "blue intensity"
+          }
+        },
+        {
+          "name": {
+            "value": "white intensity"
+          }
+        },
+        {
+          "name": {
+            "value": "illuminance"
+          }
+        },
+        {
+          "name": {
+            "value": "water potential"
+          }
+        },
+        {
+          "name": {
+            "value": "pH level"
+          }
+        }
+      ]
     }
   ],
   "prompts": [
@@ -38,13 +246,49 @@
     "version": "1.0",
     "intents": [
       {
+        "name": "GetDesiredParameterValue",
+        "confirmationRequired": false,
+        "prompts": {},
+        "slots": [
+          {
+            "name": "parameter",
+            "type": "PARAMETER_SLOT_TYPE",
+            "elicitationRequired": false,
+            "confirmationRequired": false,
+            "prompts": {}
+          }
+        ]
+      },
+      {
+        "name": "GetMeasuredParameterValue",
+        "confirmationRequired": false,
+        "prompts": {},
+        "slots": [
+          {
+            "name": "parameter",
+            "type": "PARAMETER_SLOT_TYPE",
+            "elicitationRequired": false,
+            "confirmationRequired": false,
+            "prompts": {}
+          }
+        ]
+      },
+      {
         "name": "StartRecipe",
         "confirmationRequired": true,
         "prompts": {
           "confirm": "Confirm.Intent-StartRecipe"
         },
-        "slots": []
+        "slots": [
+          {
+            "name": "recipe",
+            "type": "AMAZON.Food",
+            "elicitationRequired": false,
+            "confirmationRequired": false,
+            "prompts": {}
+          }
+        ]
       }
     ]
-  }
+ }
 }
