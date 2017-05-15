@@ -275,10 +275,9 @@ function getParamUnits(parameter) {
                     "light_intensity_red" : "lux",
                     "light_intensity_white" : "lux",
                     "water_electrical_conductivity" : "micro Siemens per centimeter",
-                    "water_potential_hydrogen" : "mega Pascals", // todo: confirm
+                    "water_potential_hydrogen" : " ", // aka pH
                     "water_temperature" : "degrees celsius",
-                    "water_level_high" : " ", // todo: confirm
-                    "ph" : " "}
+                    "water_level_high" : " "}; // todo: confirm
   return unitsMap[parameter];
 }
 
@@ -302,12 +301,12 @@ function checkIfParamIsValid(parameter) {
                            'white intensity', // alias
                            'water electrical conductivity',
                            'water conductivity', // alias
-                           'water potential hydrogen',
-                           'water potential', // alias
+                           'water potential hydrogen', // aka pH
+                           'water ph level', // alias
+                           'water ph', // alias
                            'water temperature',
                            'water level high',
-                           'water level hi', // alexa returns hi, not high
-                           'ph level'];
+                           'water level hi']; // alexa returns hi, not high
   var isValidParameter = validParameters.indexOf(parameter) > -1; // true if a valid value was passed
   return isValidParameter;
 }
@@ -334,10 +333,11 @@ function alexaParamToFoodcomputerParam(alexaParam) {
                     "water conductivity" : "water_electrical_conductivity",
                     "water potential hydrogen" : "water_potential_hydrogen",
                     "water potential" : "water_potential_hydrogen",
+                    "water ph level" : "water_potential_hydrogen",
+                    "water ph" : "water_potential_hydrogen",
                     "water temperature" : "water_temperature",
                     "water level high" : "water_level_high",
-                    "water level hi" : "water_level_high",
-                    "ph level" : "pH_level"} // todo: check
+                    "water level hi" : "water_level_high"};
   return paramMap[alexaParam];
 }
 
