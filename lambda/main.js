@@ -332,7 +332,6 @@ function alexaParamToFoodcomputerParam(alexaParam) {
                     "water electrical conductivity" : "water_electrical_conductivity",
                     "water conductivity" : "water_electrical_conductivity",
                     "water potential hydrogen" : "water_potential_hydrogen",
-                    "water potential" : "water_potential_hydrogen",
                     "water ph level" : "water_potential_hydrogen",
                     "water ph" : "water_potential_hydrogen",
                     "water temperature" : "water_temperature",
