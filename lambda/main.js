@@ -6,11 +6,6 @@
  * Copyright (c) 2017 Lindo St. Angel
  */
 
-// Read external files that identify host name and port of foodcomputer server. 
-var fs = require('fs'),
-    PORT = fs.readFileSync('./port.txt').toString().replace(/\n$/, ''), // Ignore last newline character
-    HOST = fs.readFileSync('./host.txt').toString().replace(/\n$/, '');
-
 // Route the incoming request based on type (LaunchRequest, IntentRequest,
 // etc.) The JSON body of the request is provided in the event parameter.
 exports.handler = function (event, context) {
@@ -84,8 +79,10 @@ function onIntent(intentRequest, session, callback) {
         startRecipe(intent, session, callback);
     } else if ("StopRecipe" === intentName) {
         stopRecipe(intent, session, callback);
-    } else if ("GetStatus" === intentName) {
-        getStatus(intent, session, callback);
+    } else if ("GetDesiredParameterValue" === intentName) {
+        getParameterValue(true, intent, session, callback);
+    } else if ("GetMeasuredParameterValue" === intentName) {
+        getParameterValue(false, intent, session, callback);
     } else if ("AMAZON.HelpIntent" === intentName) {
         getWelcomeResponse(callback);
     } else if ("AMAZON.StopIntent" === intentName) {
@@ -126,7 +123,8 @@ function getWelcomeResponse(callback) {
     var cardTitle = "Welcome";
     var speechOutput = "please ask the food computer something";
     // If the user either does not reply to the welcome message, they will be prompted again.
-    var repromptText = "please ask the food computer something, for example to start a recipe";
+    var repromptText = "please ask the food computer something, for example to start a recipe"
+                       + " or ask for the value of a desired or measured parameter";
     var shouldEndSession = false;
 
     callback(sessionAttributes,
@@ -134,58 +132,215 @@ function getWelcomeResponse(callback) {
 }
 
 /*
+ * Returns the most recent desired setpoint (desired === true) or measured value (desired === false)
+ * of a parameter from the foodcomputer's database.
+ */
+function getParameterValue(desired /*true if desired*/, intent, session, callback) {
+  var cardTitle = intent.name;
+  var parameter = intent.slots.parameter.value;
+  var sessionAttributes = {};
+  var repromptText = "";
+  var shouldEndSession = true;
+  var speechOutput = "";
+
+  // Check user request for validity.
+  var parameterLowerCase = parameter.toLowerCase(); // no guarantee that Alexa ASR will return value in lower case
+  var isValidParameter = checkIfParamIsValid(parameterLowerCase);
+
+  if (isValidParameter) { // parameter valid
+    var foodcomputerParam = alexaParamToFoodcomputerParam(parameterLowerCase);
+    //console.log("FCParam: " + foodcomputerParam);
+
+    const method   = "GET",
+          path     = "/environmental_data_point/_design/openag/_view/by_variable?group_level=3",
+          postData = "";
+
+    httpReq (method, path, postData, function (obj) {
+      var paramValue = NaN;
+      for (var i = 0; i < obj.rows.length; i++) { // search json obj for the requested information
+        if (obj.rows[i].value.variable === foodcomputerParam && 
+            obj.rows[i].value.is_desired === desired) { // found a match
+          paramValue = obj.rows[i].value.value;
+          break;
+        }
+      }
+      //console.log("value: " + paramValue);
+
+      var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
+
+      if (!isNaN(paramValueOut)) {
+        speechOutput = "the value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
+                       " is " + paramValueOut + " " + getParamUnits(foodcomputerParam);
+      } else {
+        speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
+                       parameterLowerCase;
+      }
+
+      callback(sessionAttributes,
+               buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
+    });
+  } else { // parameter not valid
+    speechOutput = "error, " + parameterLowerCase + " is not a valid parameter";
+    callback(sessionAttributes,
+             buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
+  }
+}
+
+/*
+ * Starts a recipe.
  */
 function startRecipe(intent, session, callback) {
-    var cardTitle = intent.name;
-    var sessionAttributes = {};
-    var repromptText = "";
-    var shouldEndSession = true;
-    var speechOutput = "";
+  var cardTitle = intent.name;
+  var recipe = intent.slots.recipe.value;
+  var sessionAttributes = {};
+  var repromptText = "";
+  var shouldEndSession = true;
+  var speechOutput = "";
 
-    var http = require("http");
+  const method   = "POST",
+        path     = "/_openag/api/0.0.1/service/environments/environment_1/start_recipe",
+        postData = '[\"' + recipe + '\"]';
 
-    var postData = '["test_lights"]'; // name of recipe to start
+  //console.log("postData: " + postData);
 
-    var options = {
+  httpReq (method, path, postData, function (obj) {
+    if (obj.success) {
+      speechOutput = "started recipe " + recipe;
+    } else {
+      speechOutput = "error, could not start recipe " + recipe;
+    }
+    callback(sessionAttributes,
+             buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
+  });
+}
+
+// --------------- global variables and commonly used functions -----------------------
+/*
+ *
+ */
+var fs = require('fs'),
+    PORT = fs.readFileSync('./port.txt').toString().replace(/\n$/, ''), // Ignore last newline character
+    HOST = fs.readFileSync('./host.txt').toString().replace(/\n$/, '');
+    //CERT = fs.readFileSync('./client.crt'), // todo: need to enable auth
+    //KEY  = fs.readFileSync('./client.key'),
+    //CA   = fs.readFileSync('./ca.crt');
+
+var httpReq = function (method, path, postData, callback) {
+  var options = {
       hostname: HOST,
       port: PORT,
-      path: "/_openag/api/0.0.1/service/environments/environment_1/start_recipe",
-      method: "POST",
+      path: path,
+      method: method,
       headers: {
         "Content-Type": "application/json",
         "Content-Length": postData.length
       }
     };
 
-    var req = http.request(options, function (res) {
-      var resStr = "";
+  var http = require("http");
+  
+  var req = http.request(options, function (res) {
+    var resStr = "";
 
-      res.on("data", function (data) {
-        resStr += data; // save data from response
-      });
-
-      res.on("end", function () {
-        var obj = JSON.parse(resStr);
-        if (obj.success) {
-          speechOutput = "started recipe";
-        } else {
-          speechOutput = "error, could not start recipe";
-        }
-        callback(sessionAttributes,
-                 buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
-      });
+    res.on("data", function (chunk) {
+        resStr += chunk;
     });
 
-    req.on('error', function(e) {
-      console.log('problem with http request: ' + e.message);
+    res.on("end", function () {
+      var obj = JSON.parse(resStr);
+      //console.log('STATUS: ' + res.statusCode);
+      //console.log('HEADERS: ' + JSON.stringify(res.headers));
+      callback(obj);
     });
+  });
 
-    req.write(postData);
+  req.write(postData);
 
-    req.end();
+  req.end();
+
+  req.on('error', function(e) {
+    console.log('problem with request: ' + e.message);
+  });
 }
 
-// --------------- global variables and commonly used functions -----------------------
+/*
+ *
+ */
+function getParamUnits(parameter) {
+  const unitsMap = {"air_carbon_dioxide" : "ppm",
+                    "air_humidity" : "percent",
+                    "air_temperature" : "degrees celsius",
+                    "light_illuminance" : "lux", // todo: confirm
+                    "light_intensity_blue" : "lux",
+                    "light_intensity_red" : "lux",
+                    "light_intensity_white" : "lux",
+                    "water_electrical_conductivity" : "micro Siemens per centimeter",
+                    "water_potential_hydrogen" : "mega Pascals", // todo: confirm
+                    "water_temperature" : "degrees celsius",
+                    "water_level_high" : " ", // todo: confirm
+                    "ph" : " "}
+  return unitsMap[parameter];
+}
+
+/*
+ *
+ */
+function checkIfParamIsValid(parameter) {
+  const validParameters = ['air carbon dioxide',
+                           'carbon dioxide', // alexa won't recognize air
+                           'air humidity',
+                           'humidity',
+                           'air temperature',
+                           'temperature',
+                           'light illuminance',
+                           'illuminance', // alias
+                           'blue light intensity',
+                           'blue intensity', // alias
+                           'red light intensity',
+                           'red intensity', // alias
+                           'white light intensity',
+                           'white intensity', // alias
+                           'water electrical conductivity',
+                           'water conductivity', // alias
+                           'water potential hydrogen',
+                           'water potential', // alias
+                           'water temperature',
+                           'water level high',
+                           'water level hi', // alexa returns hi, not high
+                           'ph level'];
+  var isValidParameter = validParameters.indexOf(parameter) > -1; // true if a valid value was passed
+  return isValidParameter;
+}
+
+/*
+ * Mapping from Alexa returned parameters to names used in the Foodcomputer database.
+ */
+function alexaParamToFoodcomputerParam(alexaParam) {
+  const paramMap = {"carbon dioxide" : "air_carbon_dioxide",
+                    "air carbon dioxide" : "air_carbon_dioxide",
+                    "air humidity" : "air_humidity",
+                    "humidity" : "air_humidity",
+                    "air temperature" : "air_temperature",
+                    "temperature" : "air_temperature",
+                    "light illuminance" : "light_illuminance",
+                    "illuminance" : "light_illuminance",
+                    "blue light intensity" : "light_intensity_blue",
+                    "blue intensity" : "light_intensity_blue",
+                    "red light intensity" : "light_intensity_red",
+                    "red intensity" : "light_intensity_red",
+                    "white light intensity" : "light_intensity_white",
+                    "white intensity" : "light_intensity_white",
+                    "water electrical conductivity" : "water_electrical_conductivity",
+                    "water conductivity" : "water_electrical_conductivity",
+                    "water potential hydrogen" : "water_potential_hydrogen",
+                    "water potential" : "water_potential_hydrogen",
+                    "water temperature" : "water_temperature",
+                    "water level high" : "water_level_high",
+                    "water level hi" : "water_level_high",
+                    "ph level" : "pH_level"} // todo: check
+  return paramMap[alexaParam];
+}
+
 
 function createNumberAttributes(key) {
     return {
