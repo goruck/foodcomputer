@@ -155,7 +155,8 @@ function getParameterValue(desired /*true if desired*/, intent, session, callbac
           path     = "/environmental_data_point/_design/openag/_view/by_variable?group_level=3",
           postData = "";
 
-    httpReq (method, path, postData, function (obj) {
+    httpReq (method, path, postData, function (resStr) {
+      var obj = JSON.parse(resStr);
       var paramValue = NaN;
       for (var i = 0; i < obj.rows.length; i++) { // search json obj for the requested information
         if (obj.rows[i].value.variable === foodcomputerParam && 
@@ -203,7 +204,8 @@ function startRecipe(intent, session, callback) {
 
   //console.log("postData: " + postData);
 
-  httpReq (method, path, postData, function (obj) {
+  httpReq (method, path, postData, function (resStr) {
+    var obj = JSON.parse(resStr);
     if (obj.success) {
       speechOutput = "started recipe " + recipe;
     } else {
@@ -247,10 +249,9 @@ var httpReq = function (method, path, postData, callback) {
     });
 
     res.on("end", function () {
-      var obj = JSON.parse(resStr);
       //console.log('STATUS: ' + res.statusCode);
       //console.log('HEADERS: ' + JSON.stringify(res.headers));
-      callback(obj);
+      callback(resStr);
     });
   });
 
