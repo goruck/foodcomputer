@@ -83,6 +83,8 @@ function onIntent(intentRequest, session, callback) {
         getParameterValue(true, intent, session, callback);
     } else if ("GetMeasuredParameterValue" === intentName) {
         getParameterValue(false, intent, session, callback);
+    } else if ("GetDiagnosticInfo" === intentName) {
+        getDiagnosticInfo(intent, session, callback);
     } else if ("AMAZON.HelpIntent" === intentName) {
         getWelcomeResponse(callback);
     } else if ("AMAZON.StopIntent" === intentName) {
@@ -211,6 +213,31 @@ function startRecipe(intent, session, callback) {
     } else {
       speechOutput = "error, could not start recipe " + recipe;
     }
+    callback(sessionAttributes,
+             buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
+  });
+}
+
+/*
+ * Returns diagnostic info from the Food Computer
+ */
+function getDiagnosticInfo(intent, session, callback) {
+  var cardTitle = intent.name;
+  var parameter = intent.slots.parameter.value;
+  var sessionAttributes = {};
+  var repromptText = "";
+  var shouldEndSession = true;
+  var speechOutput = "";
+
+  const method   = "GET",
+        path     = "/_openag/api/0.0.1/topic_stream/diagnostics",
+        postData = "";
+
+  httpReq (method, path, postData, function (resStr) {
+    console.log("diag resStr: " + resStr);
+
+    speechOutput = "in function get diagnostic info";
+
     callback(sessionAttributes,
              buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
   });
