@@ -134,7 +134,7 @@ function getWelcomeResponse(callback) {
 }
 
 /*
- * Returns the most recent desired setpoint (desired === true) or measured value (desired === false)
+ * Returns the most recent desired setpoint (desired = true) or measured value (desired = false)
  * of a parameter from the foodcomputer's database.
  */
 function getParameterValue(desired /*true if desired*/, intent, session, callback) {
@@ -219,24 +219,35 @@ function startRecipe(intent, session, callback) {
 }
 
 /*
- * Returns diagnostic info from the Food Computer
+ * Returns diagnostic info from the Food Computer.
  */
 function getDiagnosticInfo(intent, session, callback) {
   var cardTitle = intent.name;
-  var parameter = intent.slots.parameter.value;
   var sessionAttributes = {};
   var repromptText = "";
   var shouldEndSession = true;
   var speechOutput = "";
 
   const method   = "GET",
-        path     = "/_openag/api/0.0.1/topic_stream/diagnostics",
+        path     = "/_openag/api/0.0.1/topic_data/diagnostics",
         postData = "";
 
   httpReq (method, path, postData, function (resStr) {
-    console.log("diag resStr: " + resStr);
+    var obj = JSON.parse(resStr);
+    var errMsg = "";
 
-    speechOutput = "in function get diagnostic info";
+    for (var i = 0; i < obj.status.length ; i++) {
+      if (obj.status[i].level !== 0) {
+        errMsg  += (fcDiagToAlexaDiag(obj.status[i].name) + ", ");
+      }
+    }
+
+    if (errMsg) {
+      speechOutput = "The food computer has a problem. " +
+                     "The following device or devices are not operating normally. " + errMsg;
+    } else {
+      speechOutput =  "The food computer is operating normally.";
+    }
 
     callback(sessionAttributes,
              buildSpeechletResponse(intent.name, speechOutput, repromptText, shouldEndSession));
@@ -272,6 +283,7 @@ var httpReq = function (method, path, postData, callback) {
     var resStr = "";
 
     res.on("data", function (chunk) {
+        //console.log('chunk: ' + chunk);
         resStr += chunk;
     });
 
@@ -289,6 +301,38 @@ var httpReq = function (method, path, postData, callback) {
   req.on('error', function(e) {
     console.log('problem with request: ' + e.message);
   });
+}
+
+/*
+ * Convert Food Computer device names to Alexa friendly names. 
+ */
+function fcDiagToAlexaDiag(parameter) {
+  const diagMap = {"led_blue_1" : "blue lights",
+                   "led_white_1" : "white lights",
+                   "led_red_1" : "red lights",
+                   "chiller_fan_1" : "chiller fan",
+                   "chiller_compressor_1" : "chiller compressor",
+                   "heater_core_1_1" : "heater core one",
+                   "heater_core_2_1" : "heater core two",
+                   "ds18b20_1" : "water temperature sensor",
+                   "mhz16_1" : "carbon dioxide sensor",
+                   "am2315_1" : "air temperature and humidity sensor",
+                   "atlas_ph_1" : "ph sensor",
+                   "atlas_ec_1" : "water electrical conductivity sensor",
+                   "water_level_sensor_high_1" : "high water level sensor",
+                   "water_aeration_pump_1" : "water aeration pump",
+                   "chiller_pump_1" : "chiller pump",
+                   "water_circulation_pump_1" : "water circulation pump",
+                   "pump_1_nutrient_a_1" : "pump one, nutrient pump a",
+                   "pump_2_nutrient_b_1" : "pump two, nutrient b",
+                   "pump_3_ph_up_1" : "pump three, ph up",
+                   "pump_4_ph_down_1" : "pump four, ph down",
+                   "pump_5_water_1" : "pump five, water",
+                   "air_flush_1" : "air flush"};
+
+  var msg = (diagMap.hasOwnProperty(parameter) ? diagMap[parameter] : "unknown device");
+
+  return (msg);
 }
 
 /*
