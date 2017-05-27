@@ -18,6 +18,8 @@ Example User Request | Note
 "Alexa, ask Food Computer for a million dollars" | will return an error to the user
 "Alexa, ask Food Computer for recipe lettuce | will start the recipe called "lettuce"
 "Alexa, ask Food Computer to start recipe lettuce | alt way of starting recipe "lettuce"
+"Alexa, ask Food Computer for diagnostics | returns the health of the system
+"Alexa, ask Food Computer how its feeling | alt way of asking for diags
 
 Here are the list of currently supported parameters accessable by Alexa.
 
