@@ -46,6 +46,23 @@
       ]
     },
     {
+      "name": "GetDiagnosticInfo",
+      "samples": [
+        "get diagnostics",
+        "get me diagnostics",
+        "diagnostics",
+        "diagnostic",
+        "run diagnostic",
+        "diag",
+        "how it is doing",
+        "diags",
+        "how its doing",
+        "how it is feeling",
+        "if its operating normally"
+      ],
+      "slots": []
+    },
+    {
       "name": "GetMeasuredParameterValue",
       "samples": [
         "value for measured {parameter} ",
@@ -258,6 +275,12 @@
             "prompts": {}
           }
         ]
+      },
+      {
+        "name": "GetDiagnosticInfo",
+        "confirmationRequired": false,
+        "prompts": {},
+        "slots": []
       },
       {
         "name": "GetMeasuredParameterValue",
