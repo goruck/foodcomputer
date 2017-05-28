@@ -7,25 +7,25 @@ Here are some examples of what you can do.
 
 Example User Request | Note
 ---------------------|------------------
-Get the value of a desired parameter
+**Get the value of a desired parameter**
 “Alexa, ask Food Computer for desired air carbon dioxide” | Returns desired air CO2 in ppm
 "Alexa, ask Food Computer what the desired air humidity is" | Many alt ways of asking for a parameter are supported
 “Alexa, ask Food Computer for desired {parameter}” | See below for complete list of parameters supported
-Get the value of a measured parameter
+**Get the value of a measured parameter**
 “Alexa, ask Food Computer for measured air carbon dioxide” | Returns measured air CO2 in ppm
 “Alexa, ask Food Computer for air carbon dioxide” | Omitting measured or desired defaults to measured
 “Alexa, ask Food Computer for water potential hydrogen” | aka pH
 “Alexa, ask Food Computer for water pH level” | Alias for potential hydrogen
 “Alexa, ask Food Computer for measured {parameter}” | Measured is an optional keyword
-Start a recipe
+**Start a recipe**
 "Alexa, ask Food Computer for recipe lettuce" | Will start the recipe called "lettuce"
 "Alexa, ask Food Computer to start recipe" lettuce | alt way of starting recipe "lettuce"
-Get Food Computer diagnostics information
+**Get Food Computer diagnostics information**
 "Alexa, ask Food Computer for diagnostics" | Returns the health of the system
 "Alexa, ask Food Computer how its feeling" | alt way of asking for diags
-Set the value of a desired parameter
+**Set the value of a desired parameter**
 "Alexa ask Food Computer to set air temperature to 30 degrees" | *in progress*
-Get plant health and any issues that need attention
+**Get plant health and any issues that need attention**
 "Alexa", ask Food Computer how my plants are | *in progress*
 
 Here is a list of currently supported Food Computer parameters accessible by Alexa.
@@ -75,7 +75,7 @@ This Alexa skill is not yet published. If you want to try it out right now, you 
 *coming soon*
 
 # Licensing
-Everything here is licensed under the [MIT license]https://choosealicense.com/licenses/mit/.
+Everything here is licensed under the [MIT license](https://choosealicense.com/licenses/mit/).
 
 # Contact Information
 For questions or comments about this project please contact the author goruck (Lindo St. Angel) at {lindostangel} AT {gmail} DOT {com}.
