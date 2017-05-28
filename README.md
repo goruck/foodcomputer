@@ -7,10 +7,17 @@ Here are some examples of what you can do.
 
 Example User Request | Note
 ---------------------|------------------
+**Get plant health and any issues that need attention**
+"Alexa, ask Food Computer how my plants are" | *in progress*
+**Get Food Computer diagnostics information**
+"Alexa, ask Food Computer for diagnostics" | Returns the health of the system
+"Alexa, ask Food Computer how its feeling" | alt way of asking for diags
 **Get the value of a desired parameter**
 “Alexa, ask Food Computer for desired air carbon dioxide” | Returns desired air CO2 in ppm
 "Alexa, ask Food Computer what the desired air humidity is" | Many alt ways of asking for a parameter are supported
 “Alexa, ask Food Computer for desired {parameter}” | See below for complete list of parameters supported
+**Set the value of a desired parameter**
+"Alexa ask Food Computer to set air temperature to 30 degrees" | *in progress*
 **Get the value of a measured parameter**
 “Alexa, ask Food Computer for measured air carbon dioxide” | Returns measured air CO2 in ppm
 “Alexa, ask Food Computer for air carbon dioxide” | Omitting measured or desired defaults to measured
@@ -20,13 +27,6 @@ Example User Request | Note
 **Start a recipe**
 "Alexa, ask Food Computer for recipe lettuce" | Will start the recipe called "lettuce"
 "Alexa, ask Food Computer to start recipe" lettuce | alt way of starting recipe "lettuce"
-**Get Food Computer diagnostics information**
-"Alexa, ask Food Computer for diagnostics" | Returns the health of the system
-"Alexa, ask Food Computer how its feeling" | alt way of asking for diags
-**Set the value of a desired parameter**
-"Alexa ask Food Computer to set air temperature to 30 degrees" | *in progress*
-**Get plant health and any issues that need attention**
-"Alexa", ask Food Computer how my plants are | *in progress*
 
 Here is a list of currently supported Food Computer parameters accessible by Alexa.
 
