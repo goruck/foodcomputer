@@ -123,13 +123,20 @@
         "to start recipe {recipe} ",
         "for recipe {recipe} ",
         "to start the recipe {recipe} ",
-        "for the recipe {recipe} "
+        "for the recipe {recipe} ",
+        "for recipe",
+        "for the recipe",
+        "to start the recipe",
+        "to start recipe",
+        "start recipe"
       ],
       "slots": [
         {
           "name": "recipe",
           "type": "AMAZON.Food",
-          "samples": []
+          "samples": [
+            "{recipe} "
+          ]
         }
       ]
     }
@@ -254,7 +261,18 @@
       "variations": [
         {
           "type": "PlainText",
-          "value": "do you want to start a recipe?"
+          "value": "You want to start recipe {recipe} , right?"
+        }
+      ]
+    },
+    {
+      "id": "Elicit.Intent-StartRecipe.IntentSlot-recipe",
+      "promptVersion": "1.0",
+      "definitionVersion": "1.0",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "Please say the name of the recipe you want to start."
         }
       ]
     }
@@ -306,9 +324,11 @@
           {
             "name": "recipe",
             "type": "AMAZON.Food",
-            "elicitationRequired": false,
+            "elicitationRequired": true,
             "confirmationRequired": false,
-            "prompts": {}
+            "prompts": {
+              "elicit": "Elicit.Intent-StartRecipe.IntentSlot-recipe"
+            }
           }
         ]
       }
