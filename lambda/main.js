@@ -1,4 +1,7 @@
 /**
+ *
+ * *** Deprecated- do not use. Use ./index.js instead. ***
+ *
  * Lambda function for OpenAg Personal Food Computer control and status triggred by Alexa.
  * 
  * For details see https://github.com/goruck.
