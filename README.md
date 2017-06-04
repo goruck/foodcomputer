@@ -54,7 +54,11 @@ Spoken Parameter | Food Computer Database Parameter
 "water temperature" | "water_temperature"
 "water level high" | "water_level_high"
 
-This Alexa skill is not yet published. If you want to try it out right now, you need to set up an Amazon applications developer account and an Amazon Web Services account. The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. Also, I forked [openag_brain](https://github.com/OpenAgInitiative/openag_brain) and modified api.py so that the openag_brain RESTful API that's used in the Food Computer is more amenable for use with the Alexa skills I'm creating. So you'll need to clone my [fork](https://github.com/goruck/openag_brain) (or at least use my api.py) unless or until the openag_brain maintainers accept my pull requests. Eventually I will publish the skill (pending approval by Amazon) so anyone with a Food Computer can use it without needing to clone this repo. 
+This Alexa skill is not yet published. If you want to try it out right now you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. 
+
+The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. Also, I forked [openag_brain](https://github.com/OpenAgInitiative/openag_brain) and modified api.py so that the openag_brain RESTful API that's used in the Food Computer is more amenable for use with the Alexa skills I'm creating. So you'll need to clone my [fork](https://github.com/goruck/openag_brain) (or at least use my api.py) unless or until the openag_brain maintainers accept my pull requests.
+
+Eventually I will publish the skill (pending approval by Amazon) so anyone with a Food Computer can use it without needing to clone this repo. 
 
 # Requirements and System Architecture
 *coming soon*
