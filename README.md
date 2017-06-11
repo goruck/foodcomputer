@@ -111,6 +111,7 @@ $ cd /opt/ros/indigo/share/openag_brain/launch
 $ rosrun openag_brain firmware -t upload ./personal_food_computer_v2.yaml -p ros
 ```
 *Note: you may have to remove and reinsert the Arduino USB cable from the Raspberry pi after the last command.*
+
 15. Test that openag brain works:
 ```bash
 $ rosrun open_brain main personal_food_computer_v2.launch
