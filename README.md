@@ -3,6 +3,12 @@
 # Alexa OpenAg Personal Food Computer
 This describes how to use Amazon's Alexa to create a voice user interface to the OpenAg Personal Food Computer (PFC). I was very fortunate to meet the leaders of Fenome and got the opportunity to build my own OpenAg PFC which is now in use at my home. I thought I'd give back to Fenome and the OpenAg community by integrating Amazon's Alexa with the PFC. I find the PFC an amazing device and the OpenAg initiative inspiring! I hope people find the PFC even more useful with Alexa.
 
+This Alexa skill is not yet published. If you want to try it out right now you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application. 
+
+The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. I've made some modifcations to the openag_brain source to faciliate integration with Alexa and although some of these chanages have been integrated into the offical openag_brain repo, to get the latest you should use my fork of openag_brain. 
+
+Eventually I will publish the skill (pending approval by Amazon) so anyone with a Food Computer can use it without needing to clone this repo. 
+
 Here are some examples of what you can do.
 
 Example User Request | Note
@@ -54,17 +60,12 @@ Spoken Parameter | Food Computer Database Parameter
 "water temperature" | "water_temperature"
 "water level high" | "water_level_high"
 
-This Alexa skill is not yet published. If you want to try it out right now you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application. 
-
-The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance.
-
-Eventually I will publish the skill (pending approval by Amazon) so anyone with a Food Computer can use it without needing to clone this repo. 
-
 # Requirements and System Architecture
 *coming soon*
 
 # Personal Food Computer Preparation
 
+## Installing Openag_brain on the Food Computer's Raspberry Pi
 1. Download [Raspbian Jessie Lite](https://www.raspberrypi.org/downloads/raspbian/).
 2. Download [Etcher](https://etcher.io/).
 3. Use Etcher to write Raspian image to a micro SD card. I used a 64GB card.
@@ -94,9 +95,9 @@ $ sudo tzconfig
 ```bash
 $ sudo apt-get install git
 ```
-11. [Clone openag_brain source code](https://wiki.openag.media.mit.edu/openag_brain/installing/installing_globally):
+11. Clone my fork of openag_brain source code, similar to [this](https://wiki.openag.media.mit.edu/openag_brain/installing/installing_globally).
 ```bash
-$ git clone https://github.com/OpenAgInitiative/openag_brain.git ~/catkin_ws/src/openag_brain
+$ git clone https://github.com/goruck/openag_brain.git ~/catkin_ws/src/openag_brain
 ```
 12. [Increase swap space](https://wiki.openag.media.mit.edu/openag_brain/installing/installing_globally).
 13. [Install and compile openag_brain](https://wiki.openag.media.mit.edu/openag_brain/installing/installing_globally):
@@ -134,6 +135,14 @@ $ npm run couchapp_deploy --app_db_url="http://localhost:5984/app"
 ```
 19. Test that the UI works Ok: Open your browser to http://${IP_OF_FOOD_COMPUTER}:5984/app/_design/app/_rewrite.
 20. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
+
+## List of Modifications done to Openag_brain for integration with Alexa
+
+1. Added get_topic_data() in openag_brain/nodes/api.py
+
+2. Fixed openag_brain issue #252
+
+3. Added couchdb authentication support in openag/src/openag_python/openag/cli/db/__init__.py
 
 # Alexa Skills Development
 *coming soon*
