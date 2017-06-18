@@ -5,7 +5,7 @@ This describes how to use Amazon's Alexa to create a voice user interface to the
 
 This Alexa skill is not yet published. If you want to try it out right now you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application. 
 
-The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. I've made some modifcations to the openag_brain source to faciliate integration with Alexa and although some of these chanages have been integrated into the offical openag_brain repo, to get the latest you should use my fork of openag_brain. 
+The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. I've made some modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my fork of openag_brain. 
 
 Eventually I will publish the skill (pending approval by Amazon) so anyone with a Food Computer can use it without needing to clone this repo. 
 
@@ -136,13 +136,14 @@ $ npm run couchapp_deploy --app_db_url="http://localhost:5984/app"
 19. Test that the UI works Ok: Open your browser to http://${IP_OF_FOOD_COMPUTER}:5984/app/_design/app/_rewrite.
 20. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
 
-## List of Modifications done to Openag_brain for integration with Alexa
+## List of Modifications done to Openag_Brain for integration with Alexa
 
 1. Added get_topic_data() in openag_brain/nodes/api.py
 
 2. Fixed openag_brain issue #252
 
-3. Added couchdb authentication support in openag/src/openag_python/openag/cli/db/__init__.py
+3. Added couchdb authentication support in openag/src/openag_python/openag/cli/db/\__init__.py.
+Note: openag_python is being deprecated, so this change will need to be applied to https://github.com/OpenAgInitiative/openag_brain/blob/develop/src/openag_lib/db_bootstrap/db_init.py. 
 
 # Alexa Skills Development
 *coming soon*
