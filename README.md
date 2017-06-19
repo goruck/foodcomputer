@@ -115,7 +115,7 @@ $ rosrun openag_brain firmware -t upload ./personal_food_computer_v2.yaml -p ros
 
 15. Test that openag brain works:
 ```bash
-$ rosrun open_brain main personal_food_computer_v2.launch
+$ rosrun openag_brain main personal_food_computer_v2.launch
 ```
 16. [Install NodeJs and NPM for openag_ui](https://tecadmin.net/install-latest-nodejs-npm-on-debian/):
 ```bash
