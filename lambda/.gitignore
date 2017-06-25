@@ -1,6 +1,6 @@
-ca.crt
-client.crt
-client.key
+certs/*
 host.txt
 port.txt
-main.zip
+index.zip
+node_modules/*
+mkzip.bash
