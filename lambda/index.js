@@ -34,7 +34,7 @@ var handlers = {
                   postData = '[\"' + recipe + '\"]';
             if (retObj.confirmationStatus === "CONFIRMED") {
                 // Note: arrow functions don't actually bind a this value...
-                httpReq (method, path, postData, (resStr) => {
+                httpsReq (method, path, postData, (resStr) => {
                     var obj = JSON.parse(resStr);
                     if (obj.success) {
                         speechOutput = "started recipe " + recipe;
@@ -65,7 +65,7 @@ var handlers = {
               path     = "/_openag/api/0.0.1/topic_data/diagnostics",
               postData = "";
 
-        httpReq (method, path, postData, (resStr) => {
+        httpsReq (method, path, postData, (resStr) => {
             var obj = JSON.parse(resStr);
             var errMsg = "";
 
@@ -129,7 +129,7 @@ function getParameterValue(desired /*true if desired*/, parameter) {
               path     = "/environmental_data_point/_design/openag/_view/by_variable?group_level=3",
               postData = "";
 
-        httpReq (method, path, postData, (resStr) => {
+        httpsReq (method, path, postData, (resStr) => {
             var obj = JSON.parse(resStr);
             var paramValue = NaN;
             for (var i = 0; i < obj.rows.length; i++) { // search json obj for the requested information
@@ -272,47 +272,50 @@ function checkIfParamIsValid(parameter) {
  */
 var fs = require('fs'),
     PORT = fs.readFileSync('./port.txt').toString().replace(/\n$/, ''), // Ignore last newline character
-    HOST = fs.readFileSync('./host.txt').toString().replace(/\n$/, '');
-    //CERT = fs.readFileSync('./client.crt'), // todo: need to enable auth
-    //KEY  = fs.readFileSync('./client.key'),
-    //CA   = fs.readFileSync('./ca.crt');
+    HOST = fs.readFileSync('./host.txt').toString().replace(/\n$/, ''),
+    CERT = fs.readFileSync('./certs/client.crt'),
+    KEY  = fs.readFileSync('./certs/client.key'),
+    CA   = fs.readFileSync('./certs/ca.crt');
 
-var httpReq = (method, path, postData, callback) => {
-  var options = {
-      hostname: HOST,
-      port: PORT,
-      path: path,
-      method: method,
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": postData.length
-      }
+var httpsReq = (method, path, postData, callback) => { // todo:make normal function?
+    var options = { // todo:mv out of function
+        hostname: HOST,
+        port: PORT,
+        path: path,
+        method: method,
+        key: KEY,
+        cert: CERT,
+        ca: CA,
+        headers: {
+            "Content-Type": "application/json",
+            "Content-Length": postData.length
+        }
     };
 
-  var http = require("http");
+    var https = require("https");
   
-  var req = http.request(options, (res) => {
-    var resStr = "";
+    var req = https.request(options, (res) => {
+        var resStr = "";
 
-    res.on("data", (chunk) => {
-        //console.log('chunk: ' + chunk);
-        resStr += chunk;
+        res.on("data", (chunk) => {
+            //console.log('chunk: ' + chunk);
+            resStr += chunk;
+        });
+
+        res.on("end", () => {
+            //console.log('STATUS: ' + res.statusCode);
+            //console.log('HEADERS: ' + JSON.stringify(res.headers));
+            callback(resStr);
+        });
     });
 
-    res.on("end", () => {
-      //console.log('STATUS: ' + res.statusCode);
-      //console.log('HEADERS: ' + JSON.stringify(res.headers));
-      callback(resStr);
+    req.write(postData);
+
+    req.end();
+
+    req.on('error', (e) => {
+        console.log('problem with request: ' + e.message);
     });
-  });
-
-  req.write(postData);
-
-  req.end();
-
-  req.on('error', (e) => {
-    console.log('problem with request: ' + e.message);
-  });
 }
 
 /*
