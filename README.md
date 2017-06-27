@@ -68,8 +68,8 @@ Spoken Parameter | Food Computer Database Parameter
 ## Installing Openag_brain on the Food Computer's Raspberry Pi
 1. Download [Raspbian Jessie Lite](https://www.raspberrypi.org/downloads/raspbian/).
 2. Download [Etcher](https://etcher.io/).
-3. Use Etcher to write Raspian image to a micro SD card. I used a 64GB card.
-4. Insert SD card in Raspberry Pi, boot to console. Make sure the Raspberry Pi has an ethernet connection. 
+3. Use Etcher to write Raspbian image to a micro SD card. I used a 64GB card.
+4. Insert SD card in Raspberry Pi, boot to console. Make sure the Raspberry Pi has an Ethernet connection. 
 5. Change default password:
 ```bash
 $ echo "password" | passwd --stdin pi
@@ -108,8 +108,10 @@ $ ./scripts/install_dev
 14. Build firmware and flash to Arduino:
 ```bash
 $ source /opt/ros/indigo/setup.bash
-$ cd /opt/ros/indigo/share/openag_brain/launch
-$ rosrun openag_brain firmware -t upload ./personal_food_computer_v2.yaml -p ros
+$ ~~cd /opt/ros/indigo/share/openag_brain/launch~~
+$ ~~rosrun openag_brain firmware -t upload ./personal_food_computer_v2.yaml -p ros~~
+$ cd ~/catkin_ws/src/openag_brain
+$ ./scripts/firmware -t upload
 ```
 *Note: you may have to remove and reinsert the Arduino USB cable from the Raspberry pi after the last command.*
 
@@ -135,6 +137,70 @@ $ npm run couchapp_deploy --app_db_url="http://localhost:5984/app"
 ```
 19. Test that the UI works Ok: Open your browser to http://${IP_OF_FOOD_COMPUTER}:5984/app/_design/app/_rewrite.
 20. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
+
+## Securing the PFC
+The Alexa skill's code runs in an AWS Lambda instance which communicates with the PFC via CouchDB REST APIs and openag_brain REST APIs proxied by CouchDB. These APIs need to be secured via TLS/SSL and the CouchDB "admin party" needs to be ended. Here are the steps to do this.
+
+1. Add an admin account to CouchDB, ending the admin party. The example (taken from [this](http://guide.couchdb.org/draft/security.html)) below assumes the admin's username is anna with password secret.
+```bash
+$ curl -X PUT $HOST/_config/admins/anna -d '"secret"'
+```
+
+2. Generate server and client certificates and key pairs via OpenSSL. Mutual authentication and self-signed certs will be used. Production environments should use certs signed by an actual CA. This assumes OpenSSL is installed on the Raspberry Pi, it should be by default. See [CouchDB HTTP Server](http://docs.couchdb.org/en/2.0.0/config/http.html) for additional details.
+```bash
+$ mkdir /etc/couchdb/cert
+$ cd /etc/couchdb/cert
+$ # Generate ca private key
+$ openssl genrsa -out ca.key 4096
+$ # Create self-signed ca cert, COMMON_NAME="My CA"
+$ openssl req -new -x509 -days 365 -key ca.key -out ca.crt -sha256
+$ # Create client private key
+$ openssl genrsa -out client.key 2048
+$ # Create client cert signing request, COMMON_NAME="Client 1"
+$ openssl req -new -key client.key -out client.csr -sha256
+$ # Create self-signed client cert
+$ openssl x509 -req -days 365 -in client.csr -CA ca.crt \
+> -CAkey ca.key -set_serial 01 -out client.crt -sha256
+$ # Create server private key
+$ openssl genrsa -out server.key 2048
+$ # Create server cert signing request, COMMON_NAME="localhost"
+$ openssl req -new -key server.key -out server.csr -sha256
+$ # Create signed server cert, where "key.ext" contains "subjectAltName = IP:xxx.xxx.xxx.xxx"
+$ # IP is the external IP address of your PFC.
+$ openssl x509 -req -days 365 -in server.csr -CA ca.crt \
+$ > -CAkey ca.key -set_serial 02 -out server.crt -sha256 -extfile key.ext
+$ # Copy client key pair and CA certificate to Lambda source code directory.
+$ # These will need to be uploaded to AWS via a zip file which also includes the Lambda Node.js code.
+$ cp client.crt $LAMBDA/lambda
+$ cp client.key $LAMBDA/lambda
+$ cp ca.crt $LAMBDA/lambda
+$ # Set file ownership and permissions appropriately
+$ chmod 600 *
+$ chown couchdb:couchdb *
+```
+
+3. Edit CouchDB’s configuration, by editing your local.ini. Change the following sections in the local.ini file (should be in /etc/couchdb).
+[daemons]
+httpsd = {couch_httpd, start_link, [https]} # Enable the HTTPS daemon
+[ssl]
+cert_file = /etc/couchdb/cert/server.crt
+key_file = /etc/couchdb/cert/server.key
+cacert_file = /etc/ssl/certs/ca.crt
+verify_ssl_certificates = true # Set to true to validate peer (client) certificates
+fail_if_no_peer_cert = true # Set to true to terminate the TLS/SSL handshake if the client does not send a certificate
+**NOTE: the above directive seems to have no effect - could be a bug in CouchDB**
+
+4. Restart CouchDB so that the modified local.ini file will take effect.
+```bash
+$ sudo service couchdb stop
+$ sudo service couchdb start
+```
+
+5. Test using the external IP address of the PFC. 
+```bash
+$ curl --cacert ca.crt --key client.key --cert client.crt https://$EXT_IP_ADDR:6984/
+{"couchdb":"Welcome","version":"1.6.0"}
+```
 
 ## List of Modifications done to Openag_Brain for integration with Alexa
 
