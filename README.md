@@ -108,8 +108,6 @@ $ ./scripts/install_dev
 14. Build firmware and flash to Arduino:
 ```bash
 $ source /opt/ros/indigo/setup.bash
-$ <del>cd /opt/ros/indigo/share/openag_brain/launch</del>
-$ <del>rosrun openag_brain firmware -t upload ./personal_food_computer_v2.yaml -p ros</del>
 $ cd ~/catkin_ws/src/openag_brain
 $ ./scripts/firmware -t upload
 ```
