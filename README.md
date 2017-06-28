@@ -108,8 +108,8 @@ $ ./scripts/install_dev
 14. Build firmware and flash to Arduino:
 ```bash
 $ source /opt/ros/indigo/setup.bash
-$ ~~cd /opt/ros/indigo/share/openag_brain/launch~~
-$ ~~rosrun openag_brain firmware -t upload ./personal_food_computer_v2.yaml -p ros~~
+$ <del>cd /opt/ros/indigo/share/openag_brain/launch</del>
+$ <del>rosrun openag_brain firmware -t upload ./personal_food_computer_v2.yaml -p ros</del>
 $ cd ~/catkin_ws/src/openag_brain
 $ ./scripts/firmware -t upload
 ```
@@ -135,7 +135,9 @@ $ cd openag_ui
 $ npm install
 $ npm run couchapp_deploy --app_db_url="http://localhost:5984/app"
 ```
-19. Test that the UI works Ok: Open your browser to http://${IP_OF_FOOD_COMPUTER}:5984/app/_design/app/_rewrite.
+19. Test that the UI works Ok:
+Open your browser to http://${IP_OF_FOOD_COMPUTER}:5984/app/_design/app/_rewrite.
+
 20. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
 
 ## Securing the PFC
@@ -180,15 +182,19 @@ $ chown couchdb:couchdb *
 ```
 
 3. Edit CouchDB’s configuration, by editing your local.ini. Change the following sections in the local.ini file (should be in /etc/couchdb).
+
+```text
 [daemons]
 httpsd = {couch_httpd, start_link, [https]} # Enable the HTTPS daemon
+
 [ssl]
 cert_file = /etc/couchdb/cert/server.crt
 key_file = /etc/couchdb/cert/server.key
 cacert_file = /etc/ssl/certs/ca.crt
 verify_ssl_certificates = true # Set to true to validate peer (client) certificates
 fail_if_no_peer_cert = true # Set to true to terminate the TLS/SSL handshake if the client does not send a certificate
-**NOTE: the above directive seems to have no effect - could be a bug in CouchDB**
+```
+**NOTE: the above directive, fail_if_no_peer_cert, seems to have no effect - could be a bug in CouchDB**
 
 4. Restart CouchDB so that the modified local.ini file will take effect.
 ```bash
