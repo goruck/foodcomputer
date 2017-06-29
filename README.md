@@ -134,7 +134,7 @@ $ npm install
 $ npm run couchapp_deploy --app_db_url="http://localhost:5984/app"
 ```
 19. Test that the UI works Ok:
-Open your browser to http://${IP_OF_FOOD_COMPUTER}:5984/app/_design/app/_rewrite.
+Open your browser to http://localhost:5984/app/_design/app/_rewrite.
 
 20. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
 
@@ -151,7 +151,7 @@ $ curl -X PUT $HOST/_config/admins/name -d '"secret"'
 ```bash
 $ # (if required) detach from the local server first
 $ openag db deinit
-$ openag db init --db_url http://name:passwd@${IP_OF_FOOD_COMPUTER}:5984
+$ openag db init --db_url http://name:passwd@localhost:5984
 ```
 
 3. Generate server and client certificates and key pairs via OpenSSL. Mutual authentication and self-signed certs will be used. Production environments should use certs signed by an actual CA. This assumes OpenSSL is installed on the Raspberry Pi, it should be by default. See [CouchDB HTTP Server](http://docs.couchdb.org/en/2.0.0/config/http.html) for additional details.
