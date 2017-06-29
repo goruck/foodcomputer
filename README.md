@@ -139,14 +139,22 @@ Open your browser to http://${IP_OF_FOOD_COMPUTER}:5984/app/_design/app/_rewrite
 20. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
 
 ## Securing the PFC
-The Alexa skill's code runs in an AWS Lambda instance which communicates with the PFC via CouchDB REST APIs and openag_brain REST APIs proxied by CouchDB. These APIs need to be secured via TLS/SSL and the CouchDB "admin party" needs to be ended. Here are the steps to do this.
+The Alexa skill's code runs in an AWS Lambda instance which communicates with the PFC over the Internet via CouchDB REST APIs and openag_brain REST APIs proxied by CouchDB. For security purposes, these APIs need to be authenticated and encrypted via TLS/SSL and the CouchDB "admin party" needs to be ended. Here are the steps to do this.
 
-1. Add an admin account to CouchDB, ending the admin party. The example (taken from [this](http://guide.couchdb.org/draft/security.html)) below assumes the admin's username is anna with password secret.
+1. Add an admin account to CouchDB, ending the admin party. The example (taken from [this](http://guide.couchdb.org/draft/security.html)) below assumes the admin's username is name with password secret.
 ```bash
-$ curl -X PUT $HOST/_config/admins/anna -d '"secret"'
+$ curl -X PUT $HOST/_config/admins/name -d '"secret"'
 ```
 
-2. Generate server and client certificates and key pairs via OpenSSL. Mutual authentication and self-signed certs will be used. Production environments should use certs signed by an actual CA. This assumes OpenSSL is installed on the Raspberry Pi, it should be by default. See [CouchDB HTTP Server](http://docs.couchdb.org/en/2.0.0/config/http.html) for additional details.
+2. Note that after the admin is created, couchdb needs to be initalized as follows. Note that the patch [below](https://github.com/goruck/foodcomputer#list-of-modifications-done-to-openag_brain-for-integration-with-alexa) needs to be applied so that couchdb accepts the admin name and password. 
+
+```bash
+$ # (if required) detach from the local server first
+$ openag db deinit
+$ openag dd init --db_url http://name:passwd@${IP_OF_FOOD_COMPUTER}:5984
+```
+
+3. Generate server and client certificates and key pairs via OpenSSL. Mutual authentication and self-signed certs will be used. Production environments should use certs signed by an actual CA. This assumes OpenSSL is installed on the Raspberry Pi, it should be by default. See [CouchDB HTTP Server](http://docs.couchdb.org/en/2.0.0/config/http.html) for additional details.
 ```bash
 $ mkdir /etc/couchdb/cert
 $ cd /etc/couchdb/cert
@@ -179,7 +187,7 @@ $ chmod 600 *
 $ chown couchdb:couchdb *
 ```
 
-3. Edit CouchDB’s configuration, by editing your local.ini. Change the following sections in the local.ini file (should be in /etc/couchdb).
+4. Edit CouchDB’s configuration, by editing your local.ini. Change the following sections in the local.ini file (should be in /etc/couchdb).
 
 ```text
 [daemons]
@@ -194,13 +202,13 @@ fail_if_no_peer_cert = true # Set to true to terminate the TLS/SSL handshake if 
 ```
 **NOTE: the above directive, fail_if_no_peer_cert, seems to have no effect - could be a bug in CouchDB**
 
-4. Restart CouchDB so that the modified local.ini file will take effect.
+5. Restart CouchDB so that the modified local.ini file will take effect.
 ```bash
 $ sudo service couchdb stop
 $ sudo service couchdb start
 ```
 
-5. Test using the external IP address of the PFC. 
+6. Test using the external IP address of the PFC. 
 ```bash
 $ curl --cacert ca.crt --key client.key --cert client.crt https://$EXT_IP_ADDR:6984/
 {"couchdb":"Welcome","version":"1.6.0"}
