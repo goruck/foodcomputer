@@ -196,11 +196,10 @@ httpsd = {couch_httpd, start_link, [https]} # Enable the HTTPS daemon
 [ssl]
 cert_file = /etc/couchdb/cert/server.crt
 key_file = /etc/couchdb/cert/server.key
-cacert_file = /etc/ssl/certs/ca.crt
+cacert_file = /etc/couchdb/cert/ca.crt
 verify_ssl_certificates = true # Set to true to validate peer (client) certificates
 fail_if_no_peer_cert = true # Set to true to terminate the TLS/SSL handshake if the client does not send a certificate
 ```
-**NOTE: the above directive, fail_if_no_peer_cert, seems to have no effect - could be a bug in CouchDB**
 
 5. Restart CouchDB so that the modified local.ini file will take effect.
 ```bash
@@ -211,7 +210,7 @@ $ sudo service couchdb start
 6. Test using the external IP address of the PFC. 
 ```bash
 $ curl --cacert ca.crt --key client.key --cert client.crt https://$EXT_IP_ADDR:6984/
-{"couchdb":"Welcome","version":"1.6.0"}
+{"couchdb":"Welcome","uuid":"1d737ecdddede0ece99992f4e8dea743","version":"1.6.0","vendor":{"version":"8.3","name":"Debian"}}
 ```
 
 ## List of Modifications done to Openag_Brain for integration with Alexa
