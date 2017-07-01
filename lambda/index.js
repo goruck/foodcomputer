@@ -283,6 +283,7 @@ var httpsReq = (method, path, postData, callback) => { // todo:make normal funct
         port: PORT,
         path: path,
         method: method,
+        rejectUnauthorized: true,
         key: KEY,
         cert: CERT,
         ca: CA,
@@ -298,13 +299,13 @@ var httpsReq = (method, path, postData, callback) => { // todo:make normal funct
         var resStr = "";
 
         res.on("data", (chunk) => {
-            //console.log('chunk: ' + chunk);
+            console.log('chunk: ' + chunk);
             resStr += chunk;
         });
 
         res.on("end", () => {
-            //console.log('STATUS: ' + res.statusCode);
-            //console.log('HEADERS: ' + JSON.stringify(res.headers));
+            console.log('STATUS: ' + res.statusCode);
+            console.log('HEADERS: ' + JSON.stringify(res.headers));
             callback(resStr);
         });
     });
