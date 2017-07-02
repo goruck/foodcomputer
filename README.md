@@ -205,6 +205,8 @@ verify_ssl_certificates = true # Set to true to validate peer (client) certifica
 fail_if_no_peer_cert = true # Set to true to terminate the TLS/SSL handshake if the client does not send a certificate
 ```
 
+Note: CouchDB v1.6.0 (standard with the PFC) does not support the fail_if_no_peer_cert directive but v2.0.0 does. Therefore to ensure robust mutual authentication v2.0.0 should be used with the PFC. 
+
 5. Restart CouchDB so that the modified local.ini file will take effect.
 ```bash
 $ sudo service couchdb stop
