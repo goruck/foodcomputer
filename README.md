@@ -156,6 +156,8 @@ $ openag db init --db_url http://name:passwd@localhost:5984
 
 3. Generate server and client certificates and key pairs via OpenSSL. Mutual authentication and self-signed certs will be used. Production environments should use certs signed by an actual CA. This assumes OpenSSL is installed on the Raspberry Pi, it should be by default. See [CouchDB HTTP Server](http://docs.couchdb.org/en/2.0.0/config/http.html) for additional details.
 ```bash
+$ # login as root to run all these commands
+$ su -
 $ mkdir /etc/couchdb/cert
 $ cd /etc/couchdb/cert
 $ # Generate ca private key
@@ -179,12 +181,14 @@ $ openssl x509 -req -days 365 -in server.csr -CA ca.crt \
 $ > -CAkey ca.key -set_serial 02 -out server.crt -sha256 -extfile key.ext
 $ # Copy client key pair and CA certificate to Lambda source code directory.
 $ # These will need to be uploaded to AWS via a zip file which also includes the Lambda Node.js code.
-$ cp client.crt $LAMBDA/lambda
-$ cp client.key $LAMBDA/lambda
-$ cp ca.crt $LAMBDA/lambda
+$ cp client.crt path-to-lambda-code/lambda
+$ cp client.key path-to-lambda-code/lambda
+$ cp ca.crt path-to-lambda-code/lambda
 $ # Set file ownership and permissions appropriately
 $ chmod 600 *
 $ chown couchdb:couchdb *
+$ # logout as root
+$ exit
 ```
 
 4. Edit CouchDB’s configuration, by editing your local.ini. Change the following sections in the local.ini file (should be in /etc/couchdb).
@@ -207,9 +211,9 @@ $ sudo service couchdb stop
 $ sudo service couchdb start
 ```
 
-6. Test using the external IP address of the PFC. 
+6. Test using the external IP address and port number of the PFC. 
 ```bash
-$ curl --cacert ca.crt --key client.key --cert client.crt https://$EXT_IP_ADDR:6984/
+$ curl --cacert ca.crt --key client.key --cert client.crt https://external-ip-addr:external-port-num/
 {"couchdb":"Welcome","uuid":"1d737ecdddede0ece99992f4e8dea743","version":"1.6.0","vendor":{"version":"8.3","name":"Debian"}}
 ```
 
