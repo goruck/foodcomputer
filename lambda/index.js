@@ -277,8 +277,8 @@ var fs = require('fs'),
     KEY  = fs.readFileSync('./certs/client.key'),
     CA   = fs.readFileSync('./certs/ca.crt');
 
-var httpsReq = (method, path, postData, callback) => { // todo:make normal function?
-    var options = { // todo:mv out of function
+var httpsReq = (method, path, postData, callback) => {
+    var options = {
         hostname: HOST,
         port: PORT,
         path: path,
@@ -299,13 +299,13 @@ var httpsReq = (method, path, postData, callback) => { // todo:make normal funct
         var resStr = "";
 
         res.on("data", (chunk) => {
-            console.log('chunk: ' + chunk);
+            //console.log('chunk: ' + chunk);
             resStr += chunk;
         });
 
         res.on("end", () => {
-            console.log('STATUS: ' + res.statusCode);
-            console.log('HEADERS: ' + JSON.stringify(res.headers));
+            //console.log('STATUS: ' + res.statusCode);
+            //console.log('HEADERS: ' + JSON.stringify(res.headers));
             callback(resStr);
         });
     });
