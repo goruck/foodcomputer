@@ -62,6 +62,23 @@ var handlers = {
     },
     'GetDiagnosticInfo': function () {
         const method   = "GET",
+              path     = "/_openag/api/0.0.1/topic_data/arduino_status",
+              postData = "";
+
+        httpsReq (method, path, postData, (resStr) => {
+            var obj = JSON.parse(resStr);
+
+            if (obj.result === "OK") {
+                speechOutput =  "The food computer is operating normally.";
+            } else { // the arduino has a warning or an error
+                speechOutput = obj.result;
+            }
+
+            this.emit(":tell", speechOutput);
+        });
+    },
+    '_GetDiagnosticInfo': function () { // not using - looks like the ros topic /diagnostic is deprecated?
+        const method   = "GET",
               path     = "/_openag/api/0.0.1/topic_data/diagnostics",
               postData = "";
 
@@ -117,10 +134,48 @@ exports.handler = (event, context) => {
 /*
  *
  */
-function getParameterValue(desired /*true if desired*/, parameter) {
+function getParameterValue(desired /*true if desired*/, parameter) { // openag brain api version
     // Check user request for validity.
     var parameterLowerCase = parameter.toLowerCase(); // no guarantee that Alexa ASR will return value in lower case
+    var isValidParameter = checkIfParamIsValid(parameterLowerCase);
 
+    if (isValidParameter) { // parameter valid
+        var foodcomputerParam = alexaParamToFoodcomputerParam(parameterLowerCase);
+        const method   = "GET",
+              pathBase = "/_openag/api/0.0.1/topic_data/environments/environment_1/",
+              path     = pathBase + foodcomputerParam + (desired ? "/desired" : "/measured"),
+              postData = "";
+
+        httpsReq (method, path, postData, (resStr) => {
+            var obj = JSON.parse(resStr);
+            var paramValue = NaN;
+            
+            paramValue = obj.result;
+
+            var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
+
+            if (!isNaN(paramValueOut)) {
+                speechOutput = "the value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
+                               " is " + paramValueOut + " " + getParamUnits(foodcomputerParam);
+            } else {
+                speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
+                               parameterLowerCase;
+            }
+
+            this.emit(":tell", speechOutput);
+        });
+    } else { // parameter not valid
+        speechOutput = "error, " + parameterLowerCase + " is not a valid parameter";
+        this.emit(":tell", speechOutput);
+    }
+}
+
+/*
+ *
+ */
+function _getParameterValue(desired /*true if desired*/, parameter) { // CouchDB version - can be very slow
+    // Check user request for validity.
+    var parameterLowerCase = parameter.toLowerCase(); // no guarantee that Alexa ASR will return value in lower case
     var isValidParameter = checkIfParamIsValid(parameterLowerCase);
 
     if (isValidParameter) { // parameter valid
