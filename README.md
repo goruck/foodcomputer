@@ -117,26 +117,49 @@ $ ./scripts/firmware -t upload
 ```bash
 $ rosrun openag_brain main personal_food_computer_v2.launch
 ```
-16. [Install NodeJs and NPM for openag_ui](https://tecadmin.net/install-latest-nodejs-npm-on-debian/):
+
+## Install the Openag User Interface (openag_ui)
+1. [Install NodeJs and NPM for openag_ui](https://tecadmin.net/install-latest-nodejs-npm-on-debian/):
 ```bash
 $ sudo apt-get install curl python-software-properties
 $ curl -sL https://deb.nodesource.com/setup_7.x | sudo bash -
 $ sudo apt-get install nodejs
 ```
-17. [Clone openag_ui source code](https://github.com/OpenAgInitiative/openag_ui):
+2. [Clone openag_ui source code](https://github.com/OpenAgInitiative/openag_ui):
 ```bash
 $ git clone https://github.com/OpenAgInitiative/openag_ui
 ```
-18. [Build and Deploy the UI](https://github.com/OpenAgInitiative/openag_ui):
+3. [Build and Deploy the UI](https://github.com/OpenAgInitiative/openag_ui):
 ```bash
 $ cd openag_ui
 $ npm install
 $ npm run couchapp_deploy --app_db_url="http://localhost:5984/app"
 ```
-19. Test that the UI works Ok:
+4. Test that the UI works Ok:
 Open your browser to http://localhost:5984/app/_design/app/_rewrite.
 
-20. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
+## Misc Setup and Configuration
+1. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
+
+2. Modify rsyslog configuration file to prevent rsyslog messages flooding the logs which may eventually cause a system wide crash. See [this](See https://www.raspberrypi.org/forums/viewtopic.php?f=91&t=122601) for details. You may have this problem if the Raspberry Pi occasionally crashes and the only way to recover is power cycling it. Also you may see messages like the following in /var/log/messages:
+
+```text
+Sep  3 11:27:12 raspberrypi rsyslogd-2007: action 'action 17' suspended, next retry is Sun Sep  3 11:28:42 2017 [try http://www.rsyslog.com/e/2007 ]
+Sep  3 11:28:42 raspberrypi rsyslogd-2007: action 'action 17' suspended, next retry is Sun Sep  3 11:30:12 2017 [try http://www.rsyslog.com/e/2007 ]
+\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\0
+```
+
+Note \00... is binary junk after the actual crash and the action 17 message before that is repeated many times.
+
+To fix, comment out the last 4 lines of /etc/rsyslog.conf file like this:
+```text
+#daemon.*;mail.*;\
+#       news.err;\
+#       *.=debug;*.=info;\
+#       *.=notice;*.=warn       |/dev/xconsole
+```
+
+3. [Setup email](http://www.sbprojects.com/projects/raspberrypi/exim4.php) on the Raspberry Pi (optional).
 
 ## Securing the PFC
 The Alexa skill's code runs in an AWS Lambda instance which communicates with the PFC over the Internet via CouchDB REST APIs and openag_brain REST APIs proxied by CouchDB. For security purposes, these APIs need to be authenticated and encrypted via TLS/SSL and the CouchDB "admin party" needs to be ended. Here are the steps to do this.
@@ -146,7 +169,7 @@ The Alexa skill's code runs in an AWS Lambda instance which communicates with th
 $ curl -X PUT $HOST/_config/admins/name -d '"secret"'
 ```
 
-2. Note that after the admin is created, couchdb needs to be initalized as follows. Note that the patch [below](https://github.com/goruck/foodcomputer#list-of-modifications-done-to-openag_brain-for-integration-with-alexa) needs to be applied so that couchdb accepts the admin name and password. 
+2. Note that after the admin is created, couchdb needs to be initialized as follows. Note that the patch [below](https://github.com/goruck/foodcomputer#list-of-modifications-done-to-openag_brain-for-integration-with-alexa) needs to be applied so that couchdb accepts the admin name and password. 
 
 ```bash
 $ # (if required) detach from the local server first
@@ -219,14 +242,15 @@ $ curl --cacert ca.crt --key client.key --cert client.crt https://external-ip-ad
 {"couchdb":"Welcome","uuid":"1d737ecdddede0ece99992f4e8dea743","version":"1.6.0","vendor":{"version":"8.3","name":"Debian"}}
 ```
 
-## List of Modifications done to Openag_Brain for integration with Alexa
+## List of Modifications done to Openag_Brain for integration with Alexa (including stablity fixes)
 
-1. Added get_topic_data() in openag_brain/nodes/api.py
-
-2. Fixed openag_brain issue #252
-
-3. Added couchdb authentication support in openag/src/openag_python/openag/cli/db/\__init__.py.
-Note: openag_python is being deprecated, so this change will need to be applied to https://github.com/OpenAgInitiative/openag_brain/blob/develop/src/openag_lib/db_bootstrap/db_init.py. 
+1. https://github.com/OpenAgInitiative/openag_brain/pull/336
+2. https://github.com/OpenAgInitiative/openag_brain/pull/335
+3. https://github.com/OpenAgInitiative/openag_brain/pull/334
+4. https://github.com/OpenAgInitiative/openag_brain/pull/317
+5. https://github.com/OpenAgInitiative/openag_brain/pull/294
+6. https://github.com/OpenAgInitiative/openag_brain/pull/262
+7. https://github.com/OpenAgInitiative/openag_brain/pull/339
 
 # Alexa Skills Development
 *coming soon*
