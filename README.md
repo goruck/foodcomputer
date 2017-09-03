@@ -141,7 +141,7 @@ Open your browser to http://localhost:5984/app/_design/app/_rewrite.
 ## Misc Setup and Configuration
 1. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
 
-2. Modify rsyslog configuration file to prevent rsyslog messages flooding the logs which may eventually cause a system wide crash. See [this](See https://www.raspberrypi.org/forums/viewtopic.php?f=91&t=122601) for details. You may have this problem if the Raspberry Pi occasionally crashes and the only way to recover is power cycling it. Also you may see messages like the following in /var/log/messages:
+2. Modify rsyslog configuration file to prevent rsyslog messages flooding the logs which may eventually cause a system wide crash. See [this](https://www.raspberrypi.org/forums/viewtopic.php?f=91&t=122601) for details. You may have this problem if the Raspberry Pi occasionally crashes and the only way to recover is power cycling it. Also you may see messages like the following in /var/log/messages:
 
 ```text
 Sep  3 11:27:12 raspberrypi rsyslogd-2007: action 'action 17' suspended, next retry is Sun Sep  3 11:28:42 2017 [try http://www.rsyslog.com/e/2007 ]
