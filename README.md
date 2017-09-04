@@ -161,6 +161,15 @@ To fix, comment out the last 4 lines of /etc/rsyslog.conf file like this:
 
 3. [Setup email](http://www.sbprojects.com/projects/raspberrypi/exim4.php) on the Raspberry Pi (optional).
 
+4. Enable the watchdog timer. The PFC and the openag brain in particular is a complex system that is still in development and as such the Raspberry Pi software can occasionally freeze up. To ensure the health of the plants the Raspberry Pi's watchdog timer should be enabled which will automatically reboot the Raspberry Pi in the event of a software lockup. You also need to enable openag_brain to run as a service that automatically starts after the Raspberry Pi boots. The instructions for doing so can be found [here](http://forkgeeks.com/enabling-watchdog-on-raspberry-pi/). Note that you should test the watchdog by issuing a so-called forkbomb as follows.
+
+```bash
+$ swapoff -a
+$ forkbomb(){ forkbomb | forkbomb & }; forkbomb
+```
+
+If you have email setup the watchdog will send you and email when it has timed out and triggered a reboot. 
+
 ## Securing the PFC
 The Alexa skill's code runs in an AWS Lambda instance which communicates with the PFC over the Internet via CouchDB REST APIs and openag_brain REST APIs proxied by CouchDB. For security purposes, these APIs need to be authenticated and encrypted via TLS/SSL and the CouchDB "admin party" needs to be ended. Here are the steps to do this.
 
