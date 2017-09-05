@@ -29,12 +29,15 @@ var handlers = {
 
         if (typeof retObj != "undefined") {
             var recipe = this.event.request.intent.slots.recipe.value;
+
             const method   = "POST",
                   path     = "/_openag/api/0.0.1/service/environments/environment_1/start_recipe",
-                  postData = '[\"' + recipe + '\"]';
+                  postData = '[\"' + recipe + '\"]',
+                  text     = true;
+
             if (retObj.confirmationStatus === "CONFIRMED") {
                 // Note: arrow functions don't actually bind a this value...
-                httpsReq (method, path, postData, (resStr) => {
+                httpsReq (method, path, postData, text, (resStr) => {
                     var obj = JSON.parse(resStr);
                     if (obj.success) {
                         speechOutput = "started recipe " + recipe;
@@ -63,9 +66,10 @@ var handlers = {
     'GetDiagnosticInfo': function () {
         const method   = "GET",
               path     = "/_openag/api/0.0.1/topic_data/arduino_status",
-              postData = "";
+              postData = "",
+              text     = true;
 
-        httpsReq (method, path, postData, (resStr) => {
+        httpsReq (method, path, postData, text, (resStr) => {
             var obj = JSON.parse(resStr);
 
             if (obj.result === "OK") {
@@ -80,9 +84,10 @@ var handlers = {
     '_GetDiagnosticInfo': function () { // not using - looks like the ros topic /diagnostic is deprecated?
         const method   = "GET",
               path     = "/_openag/api/0.0.1/topic_data/diagnostics",
-              postData = "";
+              postData = "",
+              text     = true;
 
-        httpsReq (method, path, postData, (resStr) => {
+        httpsReq (method, path, postData, text, (resStr) => {
             var obj = JSON.parse(resStr);
             var errMsg = "";
 
@@ -144,9 +149,10 @@ function getParameterValue(desired /*true if desired*/, parameter) { // openag b
         const method   = "GET",
               pathBase = "/_openag/api/0.0.1/topic_data/environments/environment_1/",
               path     = pathBase + foodcomputerParam + (desired ? "/desired" : "/measured"),
-              postData = "";
+              postData = "",
+              text     = true;
 
-        httpsReq (method, path, postData, (resStr) => {
+        httpsReq (method, path, postData, text, (resStr) => {
             var obj = JSON.parse(resStr);
             var paramValue = NaN;
             
@@ -182,9 +188,10 @@ function _getParameterValue(desired /*true if desired*/, parameter) { // CouchDB
         var foodcomputerParam = alexaParamToFoodcomputerParam(parameterLowerCase);
         const method   = "GET",
               path     = "/environmental_data_point/_design/openag/_view/by_variable?group_level=3",
-              postData = "";
+              postData = "",
+              text     = true;
 
-        httpsReq (method, path, postData, (resStr) => {
+        httpsReq (method, path, postData, text, (resStr) => {
             var obj = JSON.parse(resStr);
             var paramValue = NaN;
             for (var i = 0; i < obj.rows.length; i++) { // search json obj for the requested information
@@ -332,7 +339,7 @@ var fs = require('fs'),
     KEY  = fs.readFileSync('./certs/client.key'),
     CA   = fs.readFileSync('./certs/ca.crt');
 
-var httpsReq = (method, path, postData, callback) => {
+var httpsReq = (method, path, postData, text, callback) => {
     var options = {
         hostname: HOST,
         port: PORT,
@@ -343,7 +350,7 @@ var httpsReq = (method, path, postData, callback) => {
         cert: CERT,
         ca: CA,
         headers: {
-            "Content-Type": "application/json",
+            "Content-Type": (text ? "application/json" : "image/png"),
             "Content-Length": postData.length
         }
     };
