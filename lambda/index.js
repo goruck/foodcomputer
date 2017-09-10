@@ -2,13 +2,13 @@
  * Lambda function for OpenAg Personal Food Computer control and status triggered by Alexa.
  * 
  * For details see https://github.com/goruck.
- *
- * Refactored from original to take advantage of the Alexa Skills Kit SDK for Node.js.
  * 
  * Copyright (c) 2017 Lindo St. Angel
  */
 
- // 1. Text strings =====================================================================================================
+//==============================================================================
+//========================== Setup and Globals  ================================
+//==============================================================================
 'use strict';
 var Alexa = require('alexa-sdk');
 var APP_ID = "amzn1.ask.skill.cca03904-f750-41cc-a7cf-beb59fc21820";
@@ -17,8 +17,13 @@ var welcomeOutput = "Please ask the foodcomputer something.";
 var welcomeReprompt = "You can say the name of a recipe to start,"
                       +" or ask for the value of a desired or measured parameter,"
                       +" or ask for diagnostics.";
+/*If you don't want to use cards in your skill, set the USE_IMAGES_FLAG to false.
+If you set it to true, you will need an image for each item in your data.*/
+const USE_IMAGES_FLAG = true;
 
- // 2. Skill Code =======================================================================================================
+//==============================================================================
+//========================== Event Handlers  ===================================
+//==============================================================================
 var handlers = {
     'LaunchRequest': function () {
         this.emit(':ask', welcomeOutput, welcomeReprompt);
@@ -81,6 +86,74 @@ var handlers = {
             this.emit(":tell", speechOutput);
         });
     },
+    "ShowImage": function() {
+        console.log("Show Image event: " + JSON.stringify(this.event));
+        const s3ImagePath = "https://s3.amazonaws.com/" + s3BucketName + "/";
+        const s3ImageName = "pfc-image.png";
+        var cameraName = this.event.request.intent.slots.camera.value.toLowerCase();
+
+        // Check validity of user request and map to food computer db var names.
+        if (cameraName === "top" || cameraName === "side") {
+            var _camera = (cameraName === "top" ? "aerial_image" : "side_image");
+            // Check to see if device has a display (or is the simulator).
+            if (supportsDisplay.call(this) || isSimulator.call(this)) {
+                // Query food computer database for requested image and get path of the most recent.
+                var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?reduce=true" +
+                                "\&startkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22]" +
+                                "\&endkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22,{}]";
+                httpsReq("GET", queryPath, "", true, (result) => {
+                    var obj = safelyParseJSON(result);
+                    if (obj && obj.rows[0]) {
+                        var ts = obj.rows[0].value.timestamp; // timestamp of most recent image in Unix epoch time
+                        //console.log("ts: " + ts);
+                        var id = obj.rows[0].value._id; // id of most recent image
+                        //console.log("id: " + id);
+                        var pfcImagePath = "/environmental_data_point/" + id + "/image";
+
+                        // Get image from food computer db, place in S3 bucket and display it on a capable device.
+                        httpsReq("GET", pfcImagePath, "", false, (pfcImage) => {
+                            if (isPng(pfcImage)) {
+                                puts3File(s3ImageName, pfcImage, (err, data) => {
+                                    if (err) {
+                                        console.log("ERROR ShowImage: puts3File error: " + err);
+                                        this.response.speak("sorry, I can't complete the request");
+                                        this.emit(":responseReady");
+                                    } else {
+                                        let content = {
+                                                       "hasDisplaySpeechOutput" : "showing" + cameraName + "camera",
+                                                       "bodyTemplateContent" : cameraName,
+                                                       "templateToken" : "ShowImage",
+                                                       "askOrTell": ":tell",
+                                                       "sessionAttributes" : this.attributes
+                                        };
+                                        if (USE_IMAGES_FLAG) {
+                                            content["backgroundImageUrl"] = s3ImagePath + s3ImageName;
+                                        }
+                                        renderTemplate.call(this, content);
+                                    }
+                                });
+                            } else {
+                                console.log("ERROR ShowImage: https request didn't get a valid png image");
+                                this.response.speak("sorry, I can't complete the request");
+                                this.emit(":responseReady");
+                            }
+                        });
+                    } else {
+                        console.log("ERROR ShowImage: food computer db query didn't return anything");
+                        this.response.speak("sorry, I can't complete the request");
+                        this.emit(":responseReady");
+                    }
+                });
+            } else { // Device does not have a display. 
+                this.response.speak("sorry, cannot show image since this device has no display");
+                this.emit(":responseReady");
+            }
+        } else { // Bad request.
+            console.log("ERROR ShowImage: bad request: " + cameraName);
+            this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+        }
+    },
     '_GetDiagnosticInfo': function () { // not using - looks like the ros topic /diagnostic is deprecated?
         const method   = "GET",
               path     = "/_openag/api/0.0.1/topic_data/diagnostics",
@@ -133,9 +206,9 @@ exports.handler = (event, context) => {
     alexa.execute();
 };
 
-//    END of Intent Handlers {} ========================================================================================
-// 3. Helper Function  =================================================================================================
-
+//==============================================================================
+//===================== Food Computer Helper Functions  ========================
+//==============================================================================
 /*
  *
  */
@@ -355,20 +428,20 @@ var httpsReq = (method, path, postData, text, callback) => {
         }
     };
 
-    var https = require("https");
-  
-    var req = https.request(options, (res) => {
-        var resStr = "";
+    var https = require('https');
+    var Stream = require("stream").Transform;
 
-        res.on("data", (chunk) => {
-            //console.log('chunk: ' + chunk);
-            resStr += chunk;
+    var req = https.request(options, (result) => {
+        var data = new Stream();
+
+        result.on("data", (chunk) => {
+            data.push(chunk);
         });
 
-        res.on("end", () => {
-            //console.log('STATUS: ' + res.statusCode);
-            //console.log('HEADERS: ' + JSON.stringify(res.headers));
-            callback(resStr);
+        result.on("end", () => {
+            //console.log('STATUS: ' + result.statusCode);
+            //console.log('HEADERS: ' + JSON.stringify(result.headers));
+            callback(data.read());
         });
     });
 
@@ -376,14 +449,14 @@ var httpsReq = (method, path, postData, text, callback) => {
 
     req.end();
 
-    req.on('error', (e) => {
-        console.log('problem with request: ' + e.message);
+    req.on("error", (e) => {
+        console.log("ERROR https request: " + e.message);
     });
 }
 
-/*
- *
- */
+//==============================================================================
+//==================== Alexa Delegate Helper Functions  ========================
+//==============================================================================
 function delegateToAlexa() {
     //console.log("in delegateToAlexa");
     //console.log("current dialogState: "+ this.event.request.dialogState);
@@ -405,6 +478,320 @@ function delegateToAlexa() {
         // Dialog is now complete and all required slots should be filled,
         // so call your normal intent handler.
         return this.event.request.intent;
+    }
+}
+
+//==============================================================================
+//============================ S3 Helper Functions  ============================
+//==============================================================================
+var AWS = require("aws-sdk");
+var s3 = new AWS.S3();
+const s3BucketName = "foodcomputer-images";
+
+// Get file from S3
+function getS3File(fileName, versionId, callback) {
+    var params = {
+        Bucket: s3BucketName,
+        Key: fileName
+    };
+    if (versionId) {
+        params.VersionId = versionId;
+    }
+    s3.getObject(params, function (err, data) {
+        callback(err, data);
+    });
+}
+
+// Put file into S3
+function puts3File(fileName, data, callback) {
+    var expirationDate = new Date();
+    // Assuming a user would not remain active in the same session for over 1 hr.
+    expirationDate = new Date(expirationDate.setHours(expirationDate.getHours() + 1));
+    var params = {
+        Bucket: s3BucketName,
+        Key: fileName,
+        Body: data,
+        ACL: "public-read", // TODO: find way to restrict access to this lambda function
+        Expires: expirationDate
+    };
+    s3.putObject(params, function (err, data) {
+        callback(err, data);
+    });
+}
+
+//==============================================================================
+//===================== Echo Show Helper Functions  ============================
+//==============================================================================
+function supportsDisplay() {
+  var hasDisplay =
+    this.event.context &&
+    this.event.context.System &&
+    this.event.context.System.device &&
+    this.event.context.System.device.supportedInterfaces &&
+    this.event.context.System.device.supportedInterfaces.Display
+
+  return hasDisplay;
+}
+
+function isSimulator() {
+  var isSimulator = !this.event.context; //simulator doesn't send context
+  return false;
+}
+
+
+function renderTemplate (content) {
+   console.log("renderTemplate" + content.templateToken);
+   //learn about the various templates
+   //https://developer.amazon.com/public/solutions/alexa/alexa-skills-kit/docs/display-interface-reference#display-template-reference
+   //
+   switch(content.templateToken) {
+       case "WelcomeScreenView":
+         //Send the response to Alexa
+         this.context.succeed(response);
+         break;
+       case "ShowImage":
+        //  "hasDisplaySpeechOutput" : response + " " + EXIT_SKILL_MESSAGE,
+        //  "bodyTemplateContent" : getFinalScore(this.attributes["quizscore"], this.attributes["counter"]),
+        //  "templateToken" : "FinalScoreView",
+        //  "askOrTell": ":tell",
+        //  "hint":"start a quiz",
+        //  "sessionAttributes" : this.attributes
+        //  "backgroundImageUrl"
+        var response = {
+          "version": "1.0",
+          "response": {
+            "directives": [
+              {
+                "type": "Display.RenderTemplate",
+                "backButton": "HIDDEN",
+                "template": {
+                  "type": "BodyTemplate6",
+                  //"title": content.bodyTemplateTitle,
+                  "token": content.templateToken,
+                  "textContent": {
+                    "primaryText": {
+                      "type": "RichText",
+                      "text": "<font size = '7'>"+content.bodyTemplateContent+"</font>"
+                    }
+                  }
+                }
+              },{
+                  "type": "Hint",
+                  "hint": {
+                    "type": "PlainText",
+                    "text": content.hint
+                  }
+                }
+            ],
+            "outputSpeech": {
+              "type": "SSML",
+              "ssml": "<speak>"+content.hasDisplaySpeechOutput+"</speak>"
+            },
+            "reprompt": {
+              "outputSpeech": {
+                "type": "SSML",
+                "ssml": ""
+              }
+            },
+            "shouldEndSession": content.askOrTell== ":tell",
+
+          },
+          "sessionAttributes": content.sessionAttributes
+
+        }
+
+        if(content.backgroundImageUrl) {
+          //when we have images, create a sources object
+
+          let sources = [
+            {
+              "size": "SMALL",
+              "url": content.backgroundImageUrl
+            },
+            {
+              "size": "LARGE",
+              "url": content.backgroundImageUrl
+            }
+          ];
+          //add the image sources object to the response
+          response["response"]["directives"][0]["template"]["backgroundImage"]={};
+          response["response"]["directives"][0]["template"]["backgroundImage"]["sources"]=sources;
+        }
+
+
+
+         //Send the response to Alexa
+         this.context.succeed(response);
+         break;
+
+       case "ItemDetailsView":
+           var response = {
+             "version": "1.0",
+             "response": {
+               "directives": [
+                 {
+                   "type": "Display.RenderTemplate",
+                   "template": {
+                     "type": "BodyTemplate3",
+                     "title": content.bodyTemplateTitle,
+                     "token": content.templateToken,
+                     "textContent": {
+                       "primaryText": {
+                         "type": "RichText",
+                         "text": "<font size = '5'>"+content.bodyTemplateContent+"</font>"
+                       }
+                     },
+                     "backButton": "HIDDEN"
+                   }
+                 }
+               ],
+               "outputSpeech": {
+                 "type": "SSML",
+                 "ssml": "<speak>"+content.hasDisplaySpeechOutput+"</speak>"
+               },
+               "reprompt": {
+                 "outputSpeech": {
+                   "type": "SSML",
+                   "ssml": "<speak>"+content.hasDisplayRepromptText+"</speak>"
+                 }
+               },
+               "shouldEndSession": content.askOrTell== ":tell",
+               "card": {
+                 "type": "Simple",
+                 "title": content.simpleCardTitle,
+                 "content": content.simpleCardContent
+               }
+             },
+             "sessionAttributes": content.sessionAttributes
+
+         }
+
+          if(content.imageSmallUrl && content.imageLargeUrl) {
+            //when we have images, create a sources object
+            //TODO switch template to one without picture?
+            let sources = [
+              {
+                "size": "SMALL",
+                "url": content.imageSmallUrl
+              },
+              {
+                "size": "LARGE",
+                "url": content.imageLargeUrl
+              }
+            ];
+            //add the image sources object to the response
+            response["response"]["directives"][0]["template"]["image"]={};
+            response["response"]["directives"][0]["template"]["image"]["sources"]=sources;
+          }
+          //Send the response to Alexa
+          console.log("ready to respond (ItemDetailsView): "+JSON.stringify(response));
+           this.context.succeed(response);
+           break;
+       case "MultipleChoiceListView":
+       console.log ("listItems "+JSON.stringify(content.listItems));
+           var response = {
+              "version": "1.0",
+              "response": {
+                "directives": [
+                  {
+                    "type": "Display.RenderTemplate",
+                    "template": {
+                      "type": "ListTemplate1",
+                      "title": content.listTemplateTitle,
+                      "token": content.templateToken,
+                      "listItems":content.listItems,
+                      "backgroundImage": {
+                        "sources": [
+                          {
+                            "size": "SMALL",
+                            "url": content.backgroundImageSmallUrl
+                          },
+                          {
+                            "size": "LARGE",
+                            "url": content.backgroundImageLargeUrl
+                          }
+                        ]
+                      },
+                      "backButton": "HIDDEN"
+                    }
+                  }
+                ],
+                "outputSpeech": {
+                  "type": "SSML",
+                  "ssml": "<speak>"+content.hasDisplaySpeechOutput+"</speak>"
+                },
+                "reprompt": {
+                  "outputSpeech": {
+                    "type": "SSML",
+                    "ssml": "<speak>"+content.hasDisplayRepromptText+"</speak>"
+                  }
+                },
+                "shouldEndSession": content.askOrTell== ":tell",
+                "card": {
+                  "type": "Simple",
+                  "title": content.simpleCardTitle,
+                  "content": content.simpleCardContent
+                }
+              },
+                "sessionAttributes": content.sessionAttributes
+
+          }
+
+            if(content.backgroundImageLargeUrl) {
+              //when we have images, create a sources object
+              //TODO switch template to one without picture?
+              let sources = [
+                {
+                  "size": "SMALL",
+                  "url": content.backgroundImageLargeUrl
+                },
+                {
+                  "size": "LARGE",
+                  "url": content.backgroundImageLargeUrl
+                }
+              ];
+              //add the image sources object to the response
+              response["response"]["directives"][0]["template"]["backgroundImage"]={};
+              response["response"]["directives"][0]["template"]["backgroundImage"]["sources"]=sources;
+            }
+            console.log("ready to respond (MultipleChoiceList): "+JSON.stringify(response));
+           this.context.succeed(response);
+           break;
+       default:
+          this.response.speak("Thanks for playing, goodbye");
+          this.emit(':responseReady');
+   }
+
+}
+
+//==============================================================================
+//======================== Misc Helper Functions  ==============================
+//==============================================================================
+/*
+ * Checks if a file is a png image.
+ * https://stackoverflow.com/questions/8473703/in-node-js-given-a-url-how-do-i-check-whether-its-a-jpg-png-gif/8475542#8475542
+ */
+function isPng(file) {
+    const pngMagicNum = "89504e47";
+    var magicNumInFile = file.toString('hex',0,4);
+    //console.log("magicNumInFile: " + magicNumInFile);
+  
+    if (magicNumInFile === pngMagicNum) {
+        return true;
+    } else {
+        return false;
+    }
+}
+/*
+ * Checks for valid JSON. 
+ */
+function safelyParseJSON(json) {
+    var parsed;
+
+    try {
+        return parsed = JSON.parse(json)
+    } catch (e) {
+        return null;
     }
 }
 
