@@ -106,6 +106,8 @@ var handlers = {
                     if (obj && obj.rows[0]) {
                         var ts = obj.rows[0].value.timestamp; // timestamp of most recent image in Unix epoch time
                         //console.log("ts: " + ts);
+                        var dateTime = timeConverter(ts);
+                        //console.log("dateTime: " + dateTime);
                         var id = obj.rows[0].value._id; // id of most recent image
                         //console.log("id: " + id);
                         var pfcImagePath = "/environmental_data_point/" + id + "/image";
@@ -121,7 +123,7 @@ var handlers = {
                                     } else {
                                         let content = {
                                                        "hasDisplaySpeechOutput" : "showing" + cameraName + "camera",
-                                                       "bodyTemplateContent" : cameraName,
+                                                       "bodyTemplateContent" : cameraName + " " + dateTime,
                                                        "templateToken" : "ShowImage",
                                                        "askOrTell": ":tell",
                                                        "sessionAttributes" : this.attributes
@@ -767,6 +769,25 @@ function renderTemplate (content) {
 //==============================================================================
 //======================== Misc Helper Functions  ==============================
 //==============================================================================
+/*
+ * Converts Unix timestamp to normal date and time of day.
+ */
+function timeConverter(unix_timestamp) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const tzDiff = 7 * 60 * 60; // Pacific time is 7 hours behind UTC
+    // Create a new JavaScript Date object based on the timestamp
+    // multiplied by 1000 so that the argument is in milliseconds, not seconds.
+    var date = new Date( ( unix_timestamp - tzDiff ) * 1000 );
+    var month = months[date.getMonth()];
+    var day = date.getDate();
+    var hours = date.getHours();
+    var minutes = "0" + date.getMinutes();
+    //var seconds = "0" + date.getSeconds();
+
+   // Will display time in M D HH:MM format
+   var formattedTime = month + " " + day + " " + hours + ":" + minutes.substr(-2);
+   return formattedTime;
+}
 /*
  * Checks if a file is a png image.
  * https://stackoverflow.com/questions/8473703/in-node-js-given-a-url-how-do-i-check-whether-its-a-jpg-png-gif/8475542#8475542
