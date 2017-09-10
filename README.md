@@ -13,6 +13,10 @@ Here are some examples of what you can do.
 
 Example User Request | Note
 ---------------------|------------------
+**Show camera image if Echo device has a display**
+"Alexa, ask Food Computer to show top camera" | Displays latest image from aerial camera
+"Alexa, ask Food Computer to show side camera" | Latest image from side camera
+"Alexa, ask Food Computer to show top camera {time} ago" | Top camera image from specified past time
 **Get plant health and any issues that need attention**
 "Alexa, ask Food Computer how my plants are" | *in progress*
 **Get Food Computer diagnostics information**
