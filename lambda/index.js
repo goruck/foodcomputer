@@ -97,8 +97,14 @@ var handlers = {
             var _camera = (cameraName === "top" ? "aerial_image" : "side_image");
             // Check to see if device has a display (or is the simulator).
             if (supportsDisplay.call(this) || isSimulator.call(this)) {
-                // Query food computer database for requested image and get path of the most recent.
-                var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?reduce=true" +
+                /*
+                 * Query food computer database for requested image and get path of the most recent.
+                 * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
+                 * This will speed up queries but results in slighty out of data info returned.
+                 * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
+                 */
+                var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?" +
+                                "reduce=true\&stale=update_after" +
                                 "\&startkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22]" +
                                 "\&endkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22,{}]";
                 httpsReq("GET", queryPath, "", true, (result) => {
