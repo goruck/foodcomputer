@@ -90,7 +90,11 @@ var handlers = {
         console.log("Show Image event: " + JSON.stringify(this.event));
         const s3ImagePath = "https://s3.amazonaws.com/" + s3BucketName + "/";
         const s3ImageName = "pfc-image.png";
-        var cameraName = this.event.request.intent.slots.camera.value.toLowerCase();
+        var cameraName = "";
+
+        if (this.event.request.intent.slots.camera.value !== undefined) {
+           cameraName = this.event.request.intent.slots.camera.value.toLowerCase();
+        }
 
         // Check validity of user request and map to food computer db var names.
         if (cameraName === "top" || cameraName === "side") {
@@ -849,4 +853,29 @@ function isSlotValid(request, slotName){
          //we didn't get a value in the slot.
          return false;
      }
+}
+
+/*
+ *
+ */
+function getItem(slots) {
+    var propertyArray = Object.getOwnPropertyNames(data[0]);
+    var value;
+
+    for (var slot in slots)
+    {
+        if (slots[slot].value !== undefined)
+        {
+            value = slots[slot].value;
+            for (var property in propertyArray)
+            {
+                var item = data.filter(x => x[propertyArray[property]].toString().toLowerCase() === slots[slot].value.toString().toLowerCase());
+                if (item.length > 0)
+                {
+                    return item[0];
+                }
+            }
+        }
+    }
+    return value;
 }
