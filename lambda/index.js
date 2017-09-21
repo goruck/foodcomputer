@@ -88,6 +88,7 @@ var handlers = {
     },
     "ShowImage": function() {
         console.log("Show Image event: " + JSON.stringify(this.event));
+        const s3BucketName = "foodcomputer-images";
         const s3ImagePath = "https://s3.amazonaws.com/" + s3BucketName + "/";
         const s3ImageName = "pfc-image.png";
         var cameraName = "";
@@ -125,7 +126,7 @@ var handlers = {
                         // Get image from food computer db, place in S3 bucket and display it on a capable device.
                         httpsReq("GET", pfcImagePath, "", false, (pfcImage) => {
                             if (isPng(pfcImage)) {
-                                puts3File(s3ImageName, pfcImage, (err, data) => {
+                                putS3File(s3BucketName, s3ImageName, pfcImage, (err, data) => {
                                     if (err) {
                                         console.log("ERROR ShowImage: puts3File error: " + err);
                                         this.response.speak("sorry, I can't complete the request");
@@ -163,6 +164,73 @@ var handlers = {
         } else { // Bad request.
             console.log("ERROR ShowImage: bad request: " + cameraName);
             this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+        }
+    },
+    "ShowGraph": function() {
+        console.log("Show Graph event: " + JSON.stringify(this.event));
+        
+        var varToPlot = "air carbon dioxide"; // TODO: make a slot
+        var pfcVarToPlot = "air_carbon_dioxide"; // TODO make a mapping function
+        var startTime = 1505527955; // TODO make a slot
+        var endTime = 1505528191; // TODO make a slot
+
+        // Check to see if device has a display (or is the simulator).
+        if (supportsDisplay.call(this) || isSimulator.call(this)) {
+            /*
+             * Query food computer database for requested variable data over the time range.
+             * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
+             * This will speed up queries but results in slighty out of data info returned.
+             * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
+             */
+            var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?" +
+                            "reduce=false\&stale=update_after" +
+                            "\&startkey=[%22environment_1%22,%22measured%22,%22"+pfcVarToPlot+"%22,"+startTime+"]" +
+                            "\&endkey=[%22environment_1%22,%22measured%22,%22"+pfcVarToPlot+"%22,"+endTime+"]";
+
+            httpsReq("GET", queryPath, "", true, (result) => {
+                var obj = safelyParseJSON(result);
+                var figure = createFigure(obj);
+                const imgOpts = {
+                      format: 'png',
+                      width: 1000,
+                      height: 500
+                };
+                // TODO read plotly credentials from a file.
+                var plotly = require("plotly")("goruck","NwMKdG69SX0W9DIpt1dz");
+                plotly.getImage(figure, imgOpts, (err, imageStream) => {
+                    if (err) {
+                        console.log("ERROR ShowGraph: plotly: " + err);
+                        this.response.speak("sorry, I can't complete the request");
+                        this.emit(":responseReady");
+                    } else {
+                        const s3BucketName = "foodcomputer-graphs";
+                        const s3ImagePath = "https://s3.amazonaws.com/" + s3BucketName + "/";
+                        const s3ImageName = "pfc-graph.png";
+                        uploadS3File(s3BucketName, s3ImageName, imageStream, (err, data) => {
+                            if (err) {
+                                console.log("ERROR ShowImage: uploadS3File: " + err);
+                                this.response.speak("sorry, I can't complete the request");
+                                this.emit(":responseReady");
+                            } else {
+                                let content = {
+                                    "hasDisplaySpeechOutput" : "showing graph of " + varToPlot,
+                                    "bodyTemplateContent" : "graph of " + varToPlot,
+                                    "templateToken" : "ShowImage",
+                                    "askOrTell": ":tell",
+                                    "sessionAttributes" : this.attributes
+                                };
+                                if (USE_IMAGES_FLAG) {
+                                    content["backgroundImageUrl"] = s3ImagePath + s3ImageName;
+                                }
+                                renderTemplate.call(this, content);
+                            }
+                        });
+                    }
+                });
+            });
+        } else { // Device does not have a display. 
+            this.response.speak("sorry, cannot show image since this device has no display");
             this.emit(":responseReady");
         }
     },
@@ -206,7 +274,7 @@ var handlers = {
     'SessionEndedRequest': function () {
         speechOutput = "";
         this.emit(':tell', speechOutput);
-    },
+    }
 };
 
 exports.handler = (event, context) => {
@@ -498,12 +566,11 @@ function delegateToAlexa() {
 //==============================================================================
 var AWS = require("aws-sdk");
 var s3 = new AWS.S3();
-const s3BucketName = "foodcomputer-images";
 
 // Get file from S3
-function getS3File(fileName, versionId, callback) {
+function getS3File(bucketName, fileName, versionId, callback) {
     var params = {
-        Bucket: s3BucketName,
+        Bucket: bucketName,
         Key: fileName
     };
     if (versionId) {
@@ -515,18 +582,31 @@ function getS3File(fileName, versionId, callback) {
 }
 
 // Put file into S3
-function puts3File(fileName, data, callback) {
+function putS3File(bucketName, fileName, data, callback) {
     var expirationDate = new Date();
     // Assuming a user would not remain active in the same session for over 1 hr.
     expirationDate = new Date(expirationDate.setHours(expirationDate.getHours() + 1));
     var params = {
-        Bucket: s3BucketName,
+        Bucket: bucketName,
         Key: fileName,
         Body: data,
         ACL: "public-read", // TODO: find way to restrict access to this lambda function
         Expires: expirationDate
     };
     s3.putObject(params, function (err, data) {
+        callback(err, data);
+    });
+}
+
+// Upload object to S3
+function uploadS3File(bucketName, fileName, data, callback) {
+    var params = {
+        Bucket: bucketName,
+        Key: fileName,
+        Body: data,
+        ACL: "public-read", // TODO: find way to restrict access to this lambda function
+    };
+    s3.upload(params, function(err, data) {
         callback(err, data);
     });
 }
@@ -878,4 +958,36 @@ function getItem(slots) {
         }
     }
     return value;
+}
+
+/*
+ * Creates Plotly figure data from a PFC CouchDB JSON object.
+ */
+function createFigure(obj) {
+    var xPoints = [];
+    var yPoints = [];
+
+    for (var i = 0; i < obj.rows.length; i++) {
+         xPoints.push(obj.rows[i].value.timestamp);
+         yPoints.push(obj.rows[i].value.value);
+    }
+
+    var trace = {
+        x: xPoints,
+        y: yPoints,
+        type: "scatter"
+    }
+
+    var figure = {"data": [trace]};
+
+    return figure;
+}
+
+/*
+ * Debug - inspect and log object content.
+ *
+ */
+function inspectLogObj(obj, depth = null) {
+    const util = require("util");
+    console.log(util.inspect(obj, {depth: depth}));
 }
