@@ -13,6 +13,9 @@ Here are some examples of what you can do.
 
 Example User Request | Note
 ---------------------|------------------
+**Show graph of a parameter if Echo device has a display**
+"Alexa, ask Food Computer to show air carbon dioxide" | Default is to graph over last 24 hours
+"Alexa, ask Food Computer to show {parameter}" | See below for list of paramters supported
 **Show camera image if Echo device has a display**
 "Alexa, ask Food Computer to show top camera" | Displays latest image from aerial camera
 "Alexa, ask Food Computer to show side camera" | Latest image from side camera
@@ -25,7 +28,7 @@ Example User Request | Note
 **Get the value of a desired parameter**
 “Alexa, ask Food Computer for desired air carbon dioxide” | Returns desired air CO2 in ppm
 "Alexa, ask Food Computer what the desired air humidity is" | Many alt ways of asking for a parameter are supported
-“Alexa, ask Food Computer for desired {parameter}” | See below for complete list of parameters supported
+“Alexa, ask Food Computer for desired {parameter}” | See below for list of parameters supported
 **Set the value of a desired parameter**
 "Alexa ask Food Computer to set air temperature to 30 degrees" | *in progress*
 **Get the value of a measured parameter**
