@@ -4,3 +4,4 @@ port.txt
 index.zip
 node_modules/*
 mkzip.bash
+plotly/*
