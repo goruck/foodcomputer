@@ -10,6 +10,7 @@
 //========================== Setup and Globals  ================================
 //==============================================================================
 'use strict';
+var fs = require('fs');
 var Alexa = require('alexa-sdk');
 var APP_ID = "amzn1.ask.skill.cca03904-f750-41cc-a7cf-beb59fc21820";
 var speechOutput = "";
@@ -169,11 +170,37 @@ var handlers = {
     },
     "ShowGraph": function() {
         console.log("Show Graph event: " + JSON.stringify(this.event));
+
+        // Check for valid slot. 
+        if (this.event.request.intent.slots.parameter.value !== undefined) {
+           var parameter = this.event.request.intent.slots.parameter.value.toLowerCase();
+           //console.log("parameter: " +parameter);
+        } else {
+            console.log("ERROR ShowGraph: bad slot: " + cameraName);
+            this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+            return;
+        }
         
-        var varToPlot = "air carbon dioxide"; // TODO: make a slot
-        var pfcVarToPlot = "air_carbon_dioxide"; // TODO make a mapping function
-        var startTime = 1505527955; // TODO make a slot
-        var endTime = 1505528191; // TODO make a slot
+        // Check user request for validity and map to PFC parameter name.
+        if (checkIfParamIsValid(parameter)) {
+            var pfcParam = alexaParamToFoodcomputerParam(parameter);
+            //console.log("pfcParam: " +pfcParam);
+        } else {
+            console.log("ERROR ShowGraph: bad request: " + cameraName);
+            this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+            return;
+        }
+
+        var d = new Date();
+        var n = d.getTime(); // Number of milliseconds since 1970/01/01.
+        const daysToGraph = 1; // Number of days to graph the parameter over. 
+        const deltaMs = daysToGraph * 24 * 60 * 60 * 1000; // Days in ms. 
+        var pfcStartTime = (n - deltaMs) / 1000; // TODO make a slot
+        console.log("pfcStartTime: " +pfcStartTime);
+        var pfcEndTime = n / 1000; // TODO make a slot
+        console.log("pfcEndTime: " +pfcEndTime);
 
         // Check to see if device has a display (or is the simulator).
         if (supportsDisplay.call(this) || isSimulator.call(this)) {
@@ -183,22 +210,33 @@ var handlers = {
              * This will speed up queries but results in slighty out of data info returned.
              * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
              */
-            var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?" +
-                            "reduce=false\&stale=update_after" +
-                            "\&startkey=[%22environment_1%22,%22measured%22,%22"+pfcVarToPlot+"%22,"+startTime+"]" +
-                            "\&endkey=[%22environment_1%22,%22measured%22,%22"+pfcVarToPlot+"%22,"+endTime+"]";
+            var queryPathJson = "/environmental_data_point/_design/openag/_view/by_variable?" +
+                                "reduce=false\&stale=update_after" +
+                                "\&startkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcStartTime+"]" +
+                                "\&endkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcEndTime+"]";
 
-            httpsReq("GET", queryPath, "", true, (result) => {
-                var obj = safelyParseJSON(result);
-                var figure = createFigure(obj);
+            var queryPathCsv = "/environmental_data_point/_design/openag/_list/csv/by_variable?" +
+                               "reduce=false\&stale=update_after" +
+                               "\&startkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcStartTime+"]" +
+                               "\&endkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcEndTime+"]" +
+                               "\&cols=[%22timestamp%22,%22value%22]";
+
+            console.time("httpsReq");
+            httpsReq("GET", queryPathCsv, "", true, (result) => {
+                console.timeEnd("httpsReq");
+                var figure = mkPlotlyFigFromCsv(result, parameter, "time", getParamUnits(pfcParam));
+                //var figure = mkPlotlyFigFromJson(result, parameter, "time", getParamUnits(pfcParam);
                 const imgOpts = {
-                      format: 'png',
-                      width: 1000,
-                      height: 500
+                      format: "png",
+                      width: 1024,
+                      height: 600
                 };
-                // TODO read plotly credentials from a file.
-                var plotly = require("plotly")("goruck","NwMKdG69SX0W9DIpt1dz");
+                var PLOTLY_USER = fs.readFileSync("./plotly/username.txt").toString().replace(/\n$/, ''),
+                    PLOTLY_KEY  = fs.readFileSync("./plotly/apikey.txt").toString().replace(/\n$/, ''),
+                    plotly = require("plotly")(PLOTLY_USER, PLOTLY_KEY);
+                console.time("plotly.getImage");
                 plotly.getImage(figure, imgOpts, (err, imageStream) => {
+                    console.timeEnd("plotly.getImage");
                     if (err) {
                         console.log("ERROR ShowGraph: plotly: " + err);
                         this.response.speak("sorry, I can't complete the request");
@@ -214,8 +252,8 @@ var handlers = {
                                 this.emit(":responseReady");
                             } else {
                                 let content = {
-                                    "hasDisplaySpeechOutput" : "showing graph of " + varToPlot,
-                                    "bodyTemplateContent" : "graph of " + varToPlot,
+                                    "hasDisplaySpeechOutput" : "showing graph of " + parameter,
+                                    "bodyTemplateContent" : "",
                                     "templateToken" : "ShowImage",
                                     "askOrTell": ":tell",
                                     "sessionAttributes" : this.attributes
@@ -485,14 +523,17 @@ function checkIfParamIsValid(parameter) {
 /*
  *
  */
-var fs = require('fs'),
-    PORT = fs.readFileSync('./port.txt').toString().replace(/\n$/, ''), // Ignore last newline character
-    HOST = fs.readFileSync('./host.txt').toString().replace(/\n$/, ''),
-    CERT = fs.readFileSync('./certs/client.crt'),
-    KEY  = fs.readFileSync('./certs/client.key'),
-    CA   = fs.readFileSync('./certs/ca.crt');
-
 var httpsReq = (method, path, postData, text, callback) => {
+    var PORT = fs.readFileSync('./port.txt').toString().replace(/\n$/, ''), // Ignore last newline character
+        HOST = fs.readFileSync('./host.txt').toString().replace(/\n$/, ''),
+        CERT = fs.readFileSync('./certs/client.crt'),
+        KEY  = fs.readFileSync('./certs/client.key'),
+        CA   = fs.readFileSync('./certs/ca.crt');
+
+    var https = require('https'),
+        Stream = require("stream").Transform,
+        zlib = require('zlib');
+
     var options = {
         hostname: HOST,
         port: PORT,
@@ -504,24 +545,37 @@ var httpsReq = (method, path, postData, text, callback) => {
         ca: CA,
         headers: {
             "Content-Type": (text ? "application/json" : "image/png"),
-            "Content-Length": postData.length
+            "Content-Length": postData.length,
+            "accept-encoding" : "gzip,deflate"
         }
     };
-
-    var https = require('https');
-    var Stream = require("stream").Transform;
 
     var req = https.request(options, (result) => {
         var data = new Stream();
 
         result.on("data", (chunk) => {
             data.push(chunk);
+            //console.log("chunk: " +chunk);
         });
 
         result.on("end", () => {
-            //console.log('STATUS: ' + result.statusCode);
-            //console.log('HEADERS: ' + JSON.stringify(result.headers));
-            callback(data.read());
+            //console.log("STATUS: " + result.statusCode);
+            //console.log("HEADERS: " + JSON.stringify(result.headers));
+
+            var encoding = result.headers["content-encoding"];
+            if (encoding == "gzip") {
+                zlib.gunzip(data.read(), function(err, decoded) {
+                    callback(decoded);
+                });
+            } else if (encoding == "deflate") {
+                zlib.inflate(data.read(), function(err, decoded) {
+                    callback(decoded);
+                });
+            } else {
+                callback(data.read());
+            }
+
+           //callback(data.read());
         });
     });
 
@@ -868,14 +922,18 @@ function timeConverter(unix_timestamp) {
     // Create a new JavaScript Date object based on the timestamp
     // multiplied by 1000 so that the argument is in milliseconds, not seconds.
     var date = new Date( ( unix_timestamp - tzDiff ) * 1000 );
-    var month = months[date.getMonth()];
+    var year = date.getFullYear();
+    //var month = months[date.getMonth()];
+    var month = 1 + date.getMonth();
     var day = date.getDate();
     var hours = date.getHours();
     var minutes = "0" + date.getMinutes();
-    //var seconds = "0" + date.getSeconds();
+    var seconds = "0" + date.getSeconds();
 
    // Will display time in M D HH:MM format
-   var formattedTime = month + " " + day + " " + hours + ":" + minutes.substr(-2);
+   //var formattedTime = month + " " + day + " " + hours + ":" + minutes.substr(-2);
+   // Will display in 2013-10-04 22:23:00 format
+   var formattedTime = year+"-"+month+"-"+day+" "+hours+":"+minutes.substr(-2)+":"+seconds.substr(-2);
    return formattedTime;
 }
 /*
@@ -894,7 +952,7 @@ function isPng(file) {
     }
 }
 /*
- * Checks for valid JSON. 
+ * Checks for valid JSON and parses it. 
  */
 function safelyParseJSON(json) {
     var parsed;
@@ -961,16 +1019,21 @@ function getItem(slots) {
 }
 
 /*
- * Creates Plotly figure data from a PFC CouchDB JSON object.
+ * Creates Plotly figure data from a PFC CouchDB JSON.
  */
-function createFigure(obj) {
+function mkPlotlyFigFromJson(res, graphTitle, xaxisTitle, yaxisTitle) {
+    var obj = safelyParseJSON(res);
     var xPoints = [];
     var yPoints = [];
 
     for (var i = 0; i < obj.rows.length; i++) {
-         xPoints.push(obj.rows[i].value.timestamp);
+         var time = timeConverter(obj.rows[i].value.timestamp);
+         xPoints.push(time);
          yPoints.push(obj.rows[i].value.value);
     }
+
+    //console.log("xPoints: " +xPoints);
+    //console.log("yPoints: " +yPoints);
 
     var trace = {
         x: xPoints,
@@ -978,7 +1041,65 @@ function createFigure(obj) {
         type: "scatter"
     }
 
-    var figure = {"data": [trace]};
+    var layout = {
+       title: graphTitle,
+       xaxis: {"title": xaxisTitle},
+       yaxis: {"title": yaxisTitle}
+    }
+
+    var figure = {"data": [trace], "layout": layout};
+
+    return figure;
+}
+
+/*
+ * Creates Plotly figure data from PFC CouchDB CSV data.
+ */
+function mkPlotlyFigFromCsv(buf, graphTitle, xaxisTitle, yaxisTitle) {
+    var str = buf.toString('utf8'); // Convert Buffer to string.
+    //const deciBy = 1; // Decimate by this factor (1 = none). 
+
+    try {
+        var lines = str.split(/\r\n|\r|\n/); // Splits csv data at each new line.
+        var xPoints = [];
+        var yPoints = [];
+        // Skip first (header) line and stop on last line.
+        for (var l = 1; l <= lines.length - 1; l++) {
+            // Decimate data to speed up plotly -- has no effect?
+            //if (l % deciBy) continue;
+            // Splits each line of csv by comma.
+            var dataPoint = lines[l].split(',');
+            // Ignore empty lines.
+            if (!dataPoint[0]) continue;
+            // Seperate data point into x and y arrays.
+            var time = timeConverter(dataPoint[0]);
+            // Time value. 
+            xPoints.push(time);
+            // Value of parameter vs time.
+            yPoints.push(dataPoint[1]); 
+        }
+    } catch(e) {
+        console.log("ERROR: mkPlotlyFigFromCsv: " +e);
+    }
+
+    //console.log("xPoints Len: " +xPoints.length);
+    //console.log("yPoints Len: " +yPoints.length);
+
+    var trace = {
+        x: xPoints,
+        y: yPoints,
+        type: "scatter"
+    }
+
+    //console.log("title: "+graphTitle+" x: "+xaxisTitle+" y: "+yaxisTitle);
+
+    var layout = {
+       title: graphTitle,
+       xaxis: {"title": xaxisTitle},
+       yaxis: {"title": yaxisTitle}
+    }
+
+    var figure = {"data": [trace], "layout": layout};
 
     return figure;
 }
