@@ -9,6 +9,50 @@
       "samples": []
     },
     {
+      "name": "AMAZON.MoreIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.NavigateHomeIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.NavigateSettingsIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.NextIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.PageDownIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.PageUpIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.PreviousIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.ScrollDownIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.ScrollLeftIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.ScrollRightIntent",
+      "samples": []
+    },
+    {
+      "name": "AMAZON.ScrollUpIntent",
+      "samples": []
+    },
+    {
       "name": "AMAZON.StopIntent",
       "samples": []
     },
@@ -116,6 +160,44 @@
       ]
     },
     {
+      "name": "ShowGraph",
+      "samples": [
+        "show graph of {parameter}",
+        "show me a graph of {parameter}",
+        "graph of {parameter}",
+        "show {parameter}",
+        "display {parameter}",
+        "plot {parameter}",
+        "show me a plot of {parameter}",
+        "show me a display of {parameter}",
+        "show plot of {parameter}",
+        "show display of {parameter}"
+      ],
+      "slots": [
+        {
+          "name": "parameter",
+          "type": "PARAMETER_SLOT_TYPE",
+          "samples": []
+        }
+      ]
+    },
+    {
+      "name": "ShowImage",
+      "samples": [
+        "show {camera} camera",
+        "show {camera}",
+        "show plants",
+        "show me my plants"
+      ],
+      "slots": [
+        {
+          "name": "camera",
+          "type": "CAMERA_LOCATION",
+          "samples": []
+        }
+      ]
+    },
+    {
       "name": "StartRecipe",
       "samples": [
         "recipe {recipe} ",
@@ -143,111 +225,172 @@
   ],
   "types": [
     {
+      "name": "CAMERA_LOCATION",
+      "values": [
+        {
+          "id": null,
+          "name": {
+            "value": "top",
+            "synonyms": []
+          }
+        },
+        {
+          "id": null,
+          "name": {
+            "value": "side",
+            "synonyms": []
+          }
+        }
+      ]
+    },
+    {
       "name": "PARAMETER_SLOT_TYPE",
       "values": [
         {
+          "id": null,
           "name": {
-            "value": "air humidity"
+            "value": "air humidity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "air temperature"
+            "value": "air temperature",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "light illuminance"
+            "value": "light illuminance",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "water electrical conductivity"
+            "value": "water electrical conductivity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "water potential hydrogen"
+            "value": "water potential hydrogen",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "water temperature"
+            "value": "water temperature",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "white light intensity"
+            "value": "white light intensity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "blue light intensity"
+            "value": "blue light intensity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "red light intensity"
+            "value": "red light intensity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "air carbon dioxide"
+            "value": "air carbon dioxide",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "water level high"
+            "value": "water level high",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "temperature"
+            "value": "temperature",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "humidity"
+            "value": "humidity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "carbon dioxide"
+            "value": "carbon dioxide",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "water conductivity"
+            "value": "water conductivity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "red intensity"
+            "value": "red intensity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "blue intensity"
+            "value": "blue intensity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "white intensity"
+            "value": "white intensity",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "illuminance"
+            "value": "illuminance",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "water ph level"
+            "value": "water ph level",
+            "synonyms": []
           }
         },
         {
+          "id": null,
           "name": {
-            "value": "water ph"
+            "value": "water ph",
+            "synonyms": []
           }
         }
       ]
@@ -280,40 +423,6 @@
   "dialog": {
     "version": "1.0",
     "intents": [
-      {
-        "name": "GetDesiredParameterValue",
-        "confirmationRequired": false,
-        "prompts": {},
-        "slots": [
-          {
-            "name": "parameter",
-            "type": "PARAMETER_SLOT_TYPE",
-            "elicitationRequired": false,
-            "confirmationRequired": false,
-            "prompts": {}
-          }
-        ]
-      },
-      {
-        "name": "GetDiagnosticInfo",
-        "confirmationRequired": false,
-        "prompts": {},
-        "slots": []
-      },
-      {
-        "name": "GetMeasuredParameterValue",
-        "confirmationRequired": false,
-        "prompts": {},
-        "slots": [
-          {
-            "name": "parameter",
-            "type": "PARAMETER_SLOT_TYPE",
-            "elicitationRequired": false,
-            "confirmationRequired": false,
-            "prompts": {}
-          }
-        ]
-      },
       {
         "name": "StartRecipe",
         "confirmationRequired": true,
