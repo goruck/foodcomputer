@@ -43,7 +43,14 @@ var handlers = {
 
             if (retObj.confirmationStatus === "CONFIRMED") {
                 // Note: arrow functions don't actually bind a this value...
-                httpsReq (method, path, postData, text, (resStr) => {
+                httpsReq (method, path, postData, text, (err, resStr) => {
+                    if (err) {
+                        console.log("ERROR StartRecipe: httpsReq: " + err);
+                        this.response.speak("sorry, I can't complete the request");
+                        this.emit(":responseReady");
+                        return;
+                    }
+
                     var obj = JSON.parse(resStr);
                     if (obj.success) {
                         speechOutput = "started recipe " + recipe;
@@ -75,9 +82,15 @@ var handlers = {
               postData = "",
               text     = true;
 
-        httpsReq (method, path, postData, text, (resStr) => {
-            var obj = JSON.parse(resStr);
+        httpsReq (method, path, postData, text, (err, resStr) => {
+            if (err) {
+                console.log("ERROR GetDiagnostics: httpsReq: " + err);
+                this.response.speak("sorry, I can't complete the request");
+                this.emit(":responseReady");
+                return;
+            }
 
+            var obj = JSON.parse(resStr);
             if (obj.result === "OK") {
                 speechOutput =  "The food computer is operating normally.";
             } else { // the arduino has a warning or an error
@@ -89,87 +102,114 @@ var handlers = {
     },
     "ShowImage": function() {
         console.log("Show Image event: " + JSON.stringify(this.event));
-        const s3BucketName = "foodcomputer-images";
-        const s3ImagePath = "https://s3.amazonaws.com/" + s3BucketName + "/";
-        const s3ImageName = "pfc-image.png";
-        var cameraName = "";
 
+        // Check to see if device has a display (or is the simulator).
+        if (!supportsDisplay.call(this) && !isSimulator.call(this)) {
+            this.response.speak("sorry, cannot show image since this device has no display");
+            this.emit(":responseReady");
+            return;
+        }
+        
+        var cameraName = "";
         if (this.event.request.intent.slots.camera.value !== undefined) {
            cameraName = this.event.request.intent.slots.camera.value.toLowerCase();
         }
 
         // Check validity of user request and map to food computer db var names.
-        if (cameraName === "top" || cameraName === "side") {
-            var _camera = (cameraName === "top" ? "aerial_image" : "side_image");
-            // Check to see if device has a display (or is the simulator).
-            if (supportsDisplay.call(this) || isSimulator.call(this)) {
-                /*
-                 * Query food computer database for requested image and get path of the most recent.
-                 * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
-                 * This will speed up queries but results in slighty out of data info returned.
-                 * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
-                 */
-                var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?" +
-                                "reduce=true\&stale=update_after" +
-                                "\&startkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22]" +
-                                "\&endkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22,{}]";
-                httpsReq("GET", queryPath, "", true, (result) => {
-                    var obj = safelyParseJSON(result);
-                    if (obj && obj.rows[0]) {
-                        var ts = obj.rows[0].value.timestamp; // timestamp of most recent image in Unix epoch time
-                        //console.log("ts: " + ts);
-                        var dateTime = timeConverter(ts);
-                        //console.log("dateTime: " + dateTime);
-                        var id = obj.rows[0].value._id; // id of most recent image
-                        //console.log("id: " + id);
-                        var pfcImagePath = "/environmental_data_point/" + id + "/image";
-
-                        // Get image from food computer db, place in S3 bucket and display it on a capable device.
-                        httpsReq("GET", pfcImagePath, "", false, (pfcImage) => {
-                            if (isPng(pfcImage)) {
-                                putS3File(s3BucketName, s3ImageName, pfcImage, (err, data) => {
-                                    if (err) {
-                                        console.log("ERROR ShowImage: puts3File error: " + err);
-                                        this.response.speak("sorry, I can't complete the request");
-                                        this.emit(":responseReady");
-                                    } else {
-                                        let content = {
-                                                       "hasDisplaySpeechOutput" : "showing" + cameraName + "camera",
-                                                       "bodyTemplateContent" : cameraName + " " + dateTime,
-                                                       "templateToken" : "ShowImage",
-                                                       "askOrTell": ":tell",
-                                                       "sessionAttributes" : this.attributes
-                                        };
-                                        if (USE_IMAGES_FLAG) {
-                                            content["backgroundImageUrl"] = s3ImagePath + s3ImageName;
-                                        }
-                                        renderTemplate.call(this, content);
-                                    }
-                                });
-                            } else {
-                                console.log("ERROR ShowImage: https request didn't get a valid png image");
-                                this.response.speak("sorry, I can't complete the request");
-                                this.emit(":responseReady");
-                            }
-                        });
-                    } else {
-                        console.log("ERROR ShowImage: food computer db query didn't return anything");
-                        this.response.speak("sorry, I can't complete the request");
-                        this.emit(":responseReady");
-                    }
-                });
-            } else { // Device does not have a display. 
-                this.response.speak("sorry, cannot show image since this device has no display");
-                this.emit(":responseReady");
-            }
-        } else { // Bad request.
+        if (!(cameraName === "top") && !(cameraName === "side")) {
+            // Bad request.
             console.log("ERROR ShowImage: bad request: " + cameraName);
             this.response.speak("sorry, I can't complete the request");
             this.emit(":responseReady");
+            return;
         }
+
+        /*
+         * Query food computer database for requested image and get path of the most recent.
+         * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
+         * This will speed up queries but results in slighty out of data info returned.
+         * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
+         */
+        var _camera = (cameraName === "top" ? "aerial_image" : "side_image");
+        var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?" +
+                        "reduce=true\&stale=update_after" +
+                        "\&startkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22]" +
+                        "\&endkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22,{}]";
+        httpsReq("GET", queryPath, "", true, (err, result) => {
+            if (err) {
+                console.log("ERROR ShowImage: httpsReq: " + err);
+                this.response.speak("sorry, I can't complete the request");
+                this.emit(":responseReady");
+                return;
+            }
+
+            var obj = safelyParseJSON(result);
+            if (!obj || !obj.rows[0]) {
+                console.log("ERROR ShowImage: food computer db query didn't return anything");
+                this.response.speak("sorry, I can't complete the request");
+                this.emit(":responseReady");
+                return;
+            }
+
+            var ts = obj.rows[0].value.timestamp; // timestamp of most recent image in Unix epoch time
+            //console.log("ts: " + ts);
+            var dateTime = timeConverter(ts);
+            //console.log("dateTime: " + dateTime);
+            var id = obj.rows[0].value._id; // id of most recent image
+            //console.log("id: " + id);
+            var pfcImagePath = "/environmental_data_point/" + id + "/image";
+
+            // Get image from food computer db, place in S3 bucket and display it on a capable device.
+            httpsReq("GET", pfcImagePath, "", false, (err, pfcImage) => {
+                if (err) {
+                    console.log("ERROR ShowImage: httpsReq: " + err);
+                    this.response.speak("sorry, I can't complete the request");
+                    this.emit(":responseReady");
+                    return;
+                 }
+
+                 if (!isPng(pfcImage)) {
+                     console.log("ERROR ShowImage: https request didn't get a valid png image");
+                     this.response.speak("sorry, I can't complete the request");
+                     this.emit(":responseReady");
+                     return;
+                 }
+
+                 const s3BucketName = "foodcomputer-images";
+                 const s3ImagePath = "https://s3.amazonaws.com/" + s3BucketName + "/";
+                 const s3ImageName = "pfc-image.png";
+                 putS3File(s3BucketName, s3ImageName, pfcImage, (err, data) => {
+                     if (err) {
+                         console.log("ERROR ShowImage: puts3File error: " + err);
+                         this.response.speak("sorry, I can't complete the request");
+                         this.emit(":responseReady");
+                         return;
+                     }
+
+                     let content = {
+                         "hasDisplaySpeechOutput" : "showing" + cameraName + "camera",
+                         "bodyTemplateContent" : cameraName + " " + dateTime,
+                         "templateToken" : "ShowImage",
+                         "askOrTell": ":tell",
+                         "sessionAttributes" : this.attributes
+                     };
+                     if (USE_IMAGES_FLAG) {
+                        content["backgroundImageUrl"] = s3ImagePath + s3ImageName;
+                     }
+                     renderTemplate.call(this, content);
+                });
+            });
+        });
     },
     "ShowGraph": function() {
         console.log("Show Graph event: " + JSON.stringify(this.event));
+
+        // Check to see if device has a display (or is the simulator).
+        if (!supportsDisplay.call(this) && !isSimulator.call(this)) {
+            this.response.speak("sorry, cannot show image since this device has no display");
+            this.emit(":responseReady");
+            return;
+        }
 
         // Check for valid slot. 
         if (this.event.request.intent.slots.parameter.value !== undefined) {
@@ -193,84 +233,90 @@ var handlers = {
             return;
         }
 
+        // Calculate start and stop graph times from current time. 
         var d = new Date();
         var n = d.getTime(); // Number of milliseconds since 1970/01/01.
         const daysToGraph = 1; // Number of days to graph the parameter over. 
-        const deltaMs = daysToGraph * 24 * 60 * 60 * 1000; // Days in ms. 
+        var deltaMs = daysToGraph * 24 * 60 * 60 * 1000; // Days in ms. 
         var pfcStartTime = (n - deltaMs) / 1000; // TODO make a slot
-        console.log("pfcStartTime: " +pfcStartTime);
+        //console.log("pfcStartTime: " +pfcStartTime);
         var pfcEndTime = n / 1000; // TODO make a slot
-        console.log("pfcEndTime: " +pfcEndTime);
+        //console.log("pfcEndTime: " +pfcEndTime);
 
-        // Check to see if device has a display (or is the simulator).
-        if (supportsDisplay.call(this) || isSimulator.call(this)) {
-            /*
-             * Query food computer database for requested variable data over the time range.
-             * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
-             * This will speed up queries but results in slighty out of data info returned.
-             * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
-             */
-            var queryPathJson = "/environmental_data_point/_design/openag/_view/by_variable?" +
-                                "reduce=false\&stale=update_after" +
-                                "\&startkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcStartTime+"]" +
-                                "\&endkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcEndTime+"]";
+        /*
+         * Query food computer database for requested variable data over the time range.
+         * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
+         * This will speed up queries but results in slighty out of data info returned.
+         * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
+         */
+        // JSON query - about 4.5 MB for one day's worth of data.
+        var queryPathJson = "/environmental_data_point/_design/openag/_view/by_variable?" +
+                            "reduce=false\&stale=update_after" +
+                            "\&startkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcStartTime+"]" +
+                            "\&endkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcEndTime+"]";
 
-            var queryPathCsv = "/environmental_data_point/_design/openag/_list/csv/by_variable?" +
-                               "reduce=false\&stale=update_after" +
-                               "\&startkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcStartTime+"]" +
-                               "\&endkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcEndTime+"]" +
-                               "\&cols=[%22timestamp%22,%22value%22]";
+        // CSV query - about 0.45 MB for one day's worth of data, using this one. 
+        var queryPathCsv = "/environmental_data_point/_design/openag/_list/csv/by_variable?" +
+                           "reduce=false\&stale=update_after" +
+                           "\&startkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcStartTime+"]" +
+                           "\&endkey=[%22environment_1%22,%22measured%22,%22"+pfcParam+"%22,"+pfcEndTime+"]" +
+                           "\&cols=[%22timestamp%22,%22value%22]";
 
-            console.time("httpsReq");
-            httpsReq("GET", queryPathCsv, "", true, (result) => {
-                console.timeEnd("httpsReq");
-                var figure = mkPlotlyFigFromCsv(result, parameter, "time", getParamUnits(pfcParam));
-                //var figure = mkPlotlyFigFromJson(result, parameter, "time", getParamUnits(pfcParam);
-                const imgOpts = {
-                      format: "png",
-                      width: 1024,
-                      height: 600
-                };
-                var PLOTLY_USER = fs.readFileSync("./plotly/username.txt").toString().replace(/\n$/, ''),
-                    PLOTLY_KEY  = fs.readFileSync("./plotly/apikey.txt").toString().replace(/\n$/, ''),
-                    plotly = require("plotly")(PLOTLY_USER, PLOTLY_KEY);
-                console.time("plotly.getImage");
-                plotly.getImage(figure, imgOpts, (err, imageStream) => {
-                    console.timeEnd("plotly.getImage");
+        console.time("httpsReq");
+        httpsReq("GET", queryPathCsv, "", true, (err, result) => {
+            console.timeEnd("httpsReq");
+            if (err) {
+                console.log("ERROR ShowGraph: httpsReq: " + err);
+                this.response.speak("sorry, I can't complete the request");
+                this.emit(":responseReady");
+                return;
+            }
+
+            var figure = mkPlotlyFigFromCsv(result, parameter, "time", getParamUnits(pfcParam));
+            //var figure = mkPlotlyFigFromJson(result, parameter, "time", getParamUnits(pfcParam);
+            const imgOpts = {
+                  format: "png",
+                  width: 1024,
+                  height: 600
+            };
+            var PLOTLY_USER = fs.readFileSync("./plotly/username.txt").toString().replace(/\n$/, '');
+            var PLOTLY_KEY  = fs.readFileSync("./plotly/apikey.txt").toString().replace(/\n$/, '');
+            var plotly = require("plotly")(PLOTLY_USER, PLOTLY_KEY);
+            console.time("plotly.getImage");
+            plotly.getImage(figure, imgOpts, (err, imageStream) => {
+                console.timeEnd("plotly.getImage");
+                if (err) {
+                    console.log("ERROR ShowGraph: plotly: " + err);
+                    this.response.speak("sorry, I can't complete the request");
+                    this.emit(":responseReady");
+                    return;
+                }
+
+                const s3BucketName = "foodcomputer-graphs";
+                const s3ImagePath = "https://s3.amazonaws.com/" + s3BucketName + "/";
+                const s3ImageName = "pfc-graph.png";
+                uploadS3File(s3BucketName, s3ImageName, imageStream, (err, data) => {
                     if (err) {
-                        console.log("ERROR ShowGraph: plotly: " + err);
+                        console.log("ERROR ShowImage: uploadS3File: " + err);
                         this.response.speak("sorry, I can't complete the request");
                         this.emit(":responseReady");
-                    } else {
-                        const s3BucketName = "foodcomputer-graphs";
-                        const s3ImagePath = "https://s3.amazonaws.com/" + s3BucketName + "/";
-                        const s3ImageName = "pfc-graph.png";
-                        uploadS3File(s3BucketName, s3ImageName, imageStream, (err, data) => {
-                            if (err) {
-                                console.log("ERROR ShowImage: uploadS3File: " + err);
-                                this.response.speak("sorry, I can't complete the request");
-                                this.emit(":responseReady");
-                            } else {
-                                let content = {
-                                    "hasDisplaySpeechOutput" : "showing graph of " + parameter,
-                                    "bodyTemplateContent" : "",
-                                    "templateToken" : "ShowImage",
-                                    "askOrTell": ":tell",
-                                    "sessionAttributes" : this.attributes
-                                };
-                                if (USE_IMAGES_FLAG) {
-                                    content["backgroundImageUrl"] = s3ImagePath + s3ImageName;
-                                }
-                                renderTemplate.call(this, content);
-                            }
-                        });
+                        return;
                     }
+
+                    let content = {
+                        "hasDisplaySpeechOutput" : "showing graph of " + parameter,
+                        "bodyTemplateContent" : "",
+                        "templateToken" : "ShowImage",
+                        "askOrTell": ":tell",
+                        "sessionAttributes" : this.attributes
+                    };
+                    if (USE_IMAGES_FLAG) {
+                        content["backgroundImageUrl"] = s3ImagePath + s3ImageName;
+                    }
+                    renderTemplate.call(this, content);
                 });
             });
-        } else { // Device does not have a display. 
-            this.response.speak("sorry, cannot show image since this device has no display");
-            this.emit(":responseReady");
-        }
+        });
     },
     '_GetDiagnosticInfo': function () { // not using - looks like the ros topic /diagnostic is deprecated?
         const method   = "GET",
@@ -278,7 +324,14 @@ var handlers = {
               postData = "",
               text     = true;
 
-        httpsReq (method, path, postData, text, (resStr) => {
+        httpsReq (method, path, postData, text, (err, resStr) => {
+            if (err) {
+                console.log("ERROR ShowGraph: httpsReq: " + err);
+                this.response.speak("sorry, I can't complete the request");
+                this.emit(":responseReady");
+                return;
+            }
+
             var obj = JSON.parse(resStr);
             var errMsg = "";
 
@@ -343,23 +396,37 @@ function getParameterValue(desired /*true if desired*/, parameter) { // openag b
               postData = "",
               text     = true;
 
-        httpsReq (method, path, postData, text, (resStr) => {
-            var obj = JSON.parse(resStr);
-            var paramValue = NaN;
-            
-            paramValue = obj.result;
-
-            var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
-
-            if (!isNaN(paramValueOut)) {
-                speechOutput = "the value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
-                               " is " + paramValueOut + " " + getParamUnits(foodcomputerParam);
-            } else {
+        httpsReq (method, path, postData, text, (err, resStr) => {
+            if (err) {
                 speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
                                parameterLowerCase;
+            } else {
+                var obj = safelyParseJSON(resStr);
+
+                if (obj) {
+                    var paramValue = obj.result;
+                    var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
+                    speechOutput = "the value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
+                                   " is " + paramValueOut + " " + getParamUnits(foodcomputerParam);
+                } else {
+                    speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
+                                   parameterLowerCase;
+                }
             }
 
-            this.emit(":tell", speechOutput);
+            if (supportsDisplay.call(this) || isSimulator.call(this)) {
+                let content = {
+                    "hasDisplaySpeechOutput" : speechOutput,
+                    "title" : "getParameterValue",
+                    "textContent" : speechOutput,
+                    "templateToken" : "SingleItemView",
+                    "askOrTell": ":tell",
+                    "sessionAttributes" : this.attributes
+                };
+                renderTemplate.call(this, content);
+            } else {
+                this.emit(":tell", speechOutput);
+            }
         });
     } else { // parameter not valid
         speechOutput = "error, " + parameterLowerCase + " is not a valid parameter";
@@ -382,28 +449,51 @@ function _getParameterValue(desired /*true if desired*/, parameter) { // CouchDB
               postData = "",
               text     = true;
 
-        httpsReq (method, path, postData, text, (resStr) => {
-            var obj = JSON.parse(resStr);
-            var paramValue = NaN;
-            for (var i = 0; i < obj.rows.length; i++) { // search json obj for the requested information
-                if (obj.rows[i].value.variable === foodcomputerParam && 
-                    obj.rows[i].value.is_desired === desired) { // found a match
-                    paramValue = obj.rows[i].value.value;
-                    break;
+        httpsReq (method, path, postData, text, (err, resStr) => {
+            if (err) {
+                speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
+                               parameterLowerCase;
+            } else {
+                var obj = safelyParseJSON(resStr);
+
+                if (obj) {
+                    var paramValue = NaN;
+                    for (var i = 0; i < obj.rows.length; i++) { // search json obj for the requested information
+                        if (obj.rows[i].value.variable === foodcomputerParam && 
+                            obj.rows[i].value.is_desired === desired) { // found a match
+                            paramValue = obj.rows[i].value.value;
+                            break;
+                        }
+                    }
+                    var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
+
+                    if (!isNaN(paramValueOut)) {
+                        speechOutput = "the value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
+                                       " is " + paramValueOut + " " + getParamUnits(foodcomputerParam);
+                    } else {
+                        speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
+                                       parameterLowerCase;
+                    }
+
+                } else {
+                    speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
+                                   parameterLowerCase;
                 }
             }
 
-            var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
-
-            if (!isNaN(paramValueOut)) {
-                speechOutput = "the value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
-                               " is " + paramValueOut + " " + getParamUnits(foodcomputerParam);
+            if (supportsDisplay.call(this) || isSimulator.call(this)) {
+                let content = {
+                    "hasDisplaySpeechOutput" : speechOutput,
+                    "title" : "getParameterValue",
+                    "textContent" : speechOutput,
+                    "templateToken" : "SingleItemView",
+                    "askOrTell": ":tell",
+                    "sessionAttributes" : this.attributes
+                };
+                renderTemplate.call(this, content);
             } else {
-                speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
-                               parameterLowerCase;
+                this.emit(":tell", speechOutput);
             }
-
-            this.emit(":tell", speechOutput);
         });
     } else { // parameter not valid
         speechOutput = "error, " + parameterLowerCase + " is not a valid parameter";
@@ -565,17 +655,25 @@ var httpsReq = (method, path, postData, text, callback) => {
             var encoding = result.headers["content-encoding"];
             if (encoding == "gzip") {
                 zlib.gunzip(data.read(), function(err, decoded) {
-                    callback(decoded);
+                    callback(null, decoded); // TODO: add error handleing.
                 });
             } else if (encoding == "deflate") {
                 zlib.inflate(data.read(), function(err, decoded) {
-                    callback(decoded);
+                    callback(null, decoded);
                 });
             } else {
-                callback(data.read());
+                callback(null, data.read());
             }
 
            //callback(data.read());
+        });
+    });
+
+    // Set timeout on socket inactivity. 
+    req.on("socket", function (socket) {
+        socket.setTimeout(5000); // 5 sec timeout. 
+        socket.on("timeout", function() {
+            req.abort();
         });
     });
 
@@ -585,6 +683,7 @@ var httpsReq = (method, path, postData, text, callback) => {
 
     req.on("error", (e) => {
         console.log("ERROR https request: " + e.message);
+        callback(e.message, null);
     });
 }
 
@@ -901,6 +1000,44 @@ function renderTemplate (content) {
               response["response"]["directives"][0]["template"]["backgroundImage"]["sources"]=sources;
             }
             console.log("ready to respond (MultipleChoiceList): "+JSON.stringify(response));
+           this.context.succeed(response);
+           break;
+       case "SingleItemView":
+           var response = {
+              "version": "1.0",
+              "response": {
+                "directives": [
+                  {
+                    "type": "Display.RenderTemplate",
+                    "template": {
+                      "type": "BodyTemplate1",
+                      "title": content.title,
+                      "token": content.templateToken,
+                      "textContent": {
+                        "primaryText": {
+                        "type": "RichText",
+                        "text": "<font size = '7'>"+content.textContent+"</font>"
+                      }
+                    },
+                      "backButton": "HIDDEN"
+                    }
+                  }
+                ],
+                "outputSpeech": {
+                  "type": "SSML",
+                  "ssml": "<speak>"+content.hasDisplaySpeechOutput+"</speak>"
+                },
+                "reprompt": {
+                  "outputSpeech": {
+                    "type": "SSML",
+                    "ssml": ""
+                  }
+                },
+                "shouldEndSession": content.askOrTell== ":tell",
+              },
+              "sessionAttributes": content.sessionAttributes
+          }
+           console.log("ready to respond (SingleItemView): "+JSON.stringify(response));
            this.context.succeed(response);
            break;
        default:
