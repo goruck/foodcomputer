@@ -216,7 +216,7 @@ var handlers = {
            var parameter = this.event.request.intent.slots.parameter.value.toLowerCase();
            //console.log("parameter: " +parameter);
         } else {
-            console.log("ERROR ShowGraph: bad slot: " + cameraName);
+            console.log("ERROR ShowGraph: slot undefined");
             this.response.speak("sorry, I can't complete the request");
             this.emit(":responseReady");
             return;
@@ -227,7 +227,7 @@ var handlers = {
             var pfcParam = alexaParamToFoodcomputerParam(parameter);
             //console.log("pfcParam: " +pfcParam);
         } else {
-            console.log("ERROR ShowGraph: bad request: " + cameraName);
+            console.log("ERROR ShowGraph: bad request: " + parameter);
             this.response.speak("sorry, I can't complete the request");
             this.emit(":responseReady");
             return;
@@ -398,26 +398,31 @@ function getParameterValue(desired /*true if desired*/, parameter) { // openag b
 
         httpsReq (method, path, postData, text, (err, resStr) => {
             if (err) {
-                speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
-                               parameterLowerCase;
+                speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
+                               parameterLowerCase +".";
             } else {
                 var obj = safelyParseJSON(resStr);
 
                 if (obj) {
                     var paramValue = obj.result;
                     var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
-                    speechOutput = "the value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
-                                   " is " + paramValueOut + " " + getParamUnits(foodcomputerParam);
+                    speechOutput = "The value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
+                                   " is " + paramValueOut + " " + getParamUnits(foodcomputerParam) + ".";
                 } else {
-                    speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
-                                   parameterLowerCase;
+                    speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
+                                   parameterLowerCase + ".";
                 }
             }
+
+            // Get timestamp of parameter value which is about the current time. 
+            var d = new Date();
+            var n = d.getTime(); // Number of milliseconds since 1970/01/01.
+            var dateTime = timeConverter(n / 1000);
 
             if (supportsDisplay.call(this) || isSimulator.call(this)) {
                 let content = {
                     "hasDisplaySpeechOutput" : speechOutput,
-                    "title" : "getParameterValue",
+                    "title" : "Parameter Value at " + dateTime + ".",
                     "textContent" : speechOutput,
                     "templateToken" : "SingleItemView",
                     "askOrTell": ":tell",
@@ -437,7 +442,10 @@ function getParameterValue(desired /*true if desired*/, parameter) { // openag b
 /*
  *
  */
-function _getParameterValue(desired /*true if desired*/, parameter) { // CouchDB version - can be very slow
+function _getParameterValue(desired /*true if desired*/, parameter) {
+    // CouchDB version.
+    // Can be slow w/o update_after in CouchDB query but first result may be stale.
+
     // Check user request for validity.
     var parameterLowerCase = parameter.toLowerCase(); // no guarantee that Alexa ASR will return value in lower case
     var isValidParameter = checkIfParamIsValid(parameterLowerCase);
@@ -445,46 +453,48 @@ function _getParameterValue(desired /*true if desired*/, parameter) { // CouchDB
     if (isValidParameter) { // parameter valid
         var foodcomputerParam = alexaParamToFoodcomputerParam(parameterLowerCase);
         const method   = "GET",
-              path     = "/environmental_data_point/_design/openag/_view/by_variable?group_level=3",
+              path     = "/environmental_data_point/_design/openag/_view/by_variable?stale=update_after\&group_level=3",
               postData = "",
               text     = true;
 
         httpsReq (method, path, postData, text, (err, resStr) => {
             if (err) {
-                speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
-                               parameterLowerCase;
+                speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
+                               parameterLowerCase +".";
             } else {
                 var obj = safelyParseJSON(resStr);
 
                 if (obj) {
                     var paramValue = NaN;
+                    var paramTimeStamp = NaN;
                     for (var i = 0; i < obj.rows.length; i++) { // search json obj for the requested information
                         if (obj.rows[i].value.variable === foodcomputerParam && 
                             obj.rows[i].value.is_desired === desired) { // found a match
                             paramValue = obj.rows[i].value.value;
+                            paramTimeStamp = timeConverter(obj.rows[i].value.timestamp);
                             break;
                         }
                     }
                     var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
 
                     if (!isNaN(paramValueOut)) {
-                        speechOutput = "the value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
-                                       " is " + paramValueOut + " " + getParamUnits(foodcomputerParam);
+                        speechOutput = "The value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
+                                       " is " + paramValueOut + " " + getParamUnits(foodcomputerParam) + ".";
                     } else {
-                        speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
-                                       parameterLowerCase;
+                        speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
+                                       parameterLowerCase + ".";
                     }
 
                 } else {
-                    speechOutput = "error, could not get the value of " + (desired ? "desired " : "measured ") +
-                                   parameterLowerCase;
+                    speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
+                                   parameterLowerCase + ".";
                 }
             }
 
             if (supportsDisplay.call(this) || isSimulator.call(this)) {
                 let content = {
                     "hasDisplaySpeechOutput" : speechOutput,
-                    "title" : "getParameterValue",
+                    "title" : "Parameter Value at " + paramTimeStamp + ".",
                     "textContent" : speechOutput,
                     "templateToken" : "SingleItemView",
                     "askOrTell": ":tell",
@@ -539,14 +549,14 @@ function fcDiagToAlexaDiag(parameter) {
 function getParamUnits(parameter) {
   const unitsMap = {"air_carbon_dioxide" : "ppm",
                     "air_humidity" : "percent",
-                    "air_temperature" : "degrees celsius",
+                    "air_temperature" : "degrees Celsius",
                     "light_illuminance" : "lux", // todo: confirm
                     "light_intensity_blue" : "lux",
                     "light_intensity_red" : "lux",
                     "light_intensity_white" : "lux",
                     "water_electrical_conductivity" : "micro Siemens per centimeter",
                     "water_potential_hydrogen" : " ", // aka pH
-                    "water_temperature" : "degrees celsius",
+                    "water_temperature" : "degrees Celsius",
                     "water_level_high" : " "}; // todo: confirm
   return unitsMap[parameter];
 }
@@ -576,7 +586,8 @@ function alexaParamToFoodcomputerParam(alexaParam) {
                     "water ph" : "water_potential_hydrogen",
                     "water temperature" : "water_temperature",
                     "water level high" : "water_level_high",
-                    "water level hi" : "water_level_high"};
+                    "water level hi" : "water_level_high",
+                    "recipe" : "recipe_start"};
   return paramMap[alexaParam];
 }
 
@@ -1051,7 +1062,7 @@ function renderTemplate (content) {
 //======================== Misc Helper Functions  ==============================
 //==============================================================================
 /*
- * Converts Unix timestamp to normal date and time of day.
+ * Converts Unix timestamp in seconds to normal date and time of day.
  */
 function timeConverter(unix_timestamp) {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
