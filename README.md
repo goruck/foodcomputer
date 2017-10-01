@@ -13,7 +13,7 @@ Here are some examples of what you can do.
 
 Example User Request | Note
 ---------------------|------------------
-** Get information about the recipe being used**
+**Get information about the recipe being used**
 "Alexa, ask Food Computer for recipe information" | Returns current recipe name and when started
 **Show graph of a parameter if Echo device has a display**
 "Alexa, ask Food Computer to show air carbon dioxide" | Default is to graph over last 24 hours
