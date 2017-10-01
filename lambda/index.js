@@ -97,7 +97,23 @@ var handlers = {
                 speechOutput = obj.result;
             }
 
-            this.emit(":tell", speechOutput);
+            var d = new Date();
+            var n = d.getTime();
+            var dateTime = timeConverter(n / 1000);
+
+            if (supportsDisplay.call(this) || isSimulator.call(this)) {
+                let content = {
+                    "hasDisplaySpeechOutput" : speechOutput,
+                    "title" : "Diagnostic information at "+dateTime+".",
+                    "textContent" : speechOutput,
+                    "templateToken" : "SingleItemView",
+                    "askOrTell": ":tell",
+                    "sessionAttributes" : this.attributes
+                };
+                renderTemplate.call(this, content);
+            } else {
+                this.emit(":tell", speechOutput);
+            }
         });
     },
     "ShowImage": function() {
