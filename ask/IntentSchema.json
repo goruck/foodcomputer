@@ -160,6 +160,18 @@
       ]
     },
     {
+      "name": "GetRecipeInfo",
+      "samples": [
+        "for recipe info",
+        "for recipe information",
+        "for recipe",
+        "what recipe is running",
+        "is a recipe running",
+        "recipe"
+      ],
+      "slots": []
+    },
+    {
       "name": "ShowGraph",
       "samples": [
         "show graph of {parameter}",
