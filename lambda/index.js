@@ -318,6 +318,75 @@ var handlers = {
             });
         });
     },
+    "GetRecipeInfo": function() {
+        console.log("Get recipe info event: " + JSON.stringify(this.event));
+
+        /*
+         * Query to food computer database for recipe information.
+         * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
+         * This will speed up queries but results in slighty out of data info returned.
+         * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
+         */
+        var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?stale=update_after\&group_level=3";
+
+        httpsReq("GET", queryPath, "", true, (err, result) => {
+            if (err) {
+                console.log("ERROR GetRecipeInfo: httpsReq: " + err);
+                this.response.speak("sorry, I can't complete the request");
+                this.emit(":responseReady");
+                return;
+            }
+
+            var obj = safelyParseJSON(result);
+            if (!obj || !obj.rows[0]) {
+                console.log("ERROR GetRecipeInfo: food computer db query didn't return anything");
+                this.response.speak("sorry, I can't complete the request");
+                this.emit(":responseReady");
+                return;
+            }
+
+            // Search json obj for recipe information.
+            var recipeStartTimeStamp = 0;
+            var recipeStartName      = "";
+            var recipeEndTimeStamp   = 0;
+            var recipeEndName        = "";
+            for (var i = 0; i < obj.rows.length; i++) {
+                if (obj.rows[i].key[1] === "desired" && obj.rows[i].key[2] === "recipe_start") {
+                    recipeStartTimeStamp = obj.rows[i].value.timestamp;
+                    recipeStartName = obj.rows[i].value.value;
+                } else if (obj.rows[i].key[1] === "desired" && obj.rows[i].key[2] === "recipe_end") {
+                    recipeEndTimeStamp = obj.rows[i].value.timestamp;
+                    recipeEndName = obj.rows[i].value.value;
+                }
+            }
+
+            var recipeStartDateTime = "";
+            if (recipeStartTimeStamp > recipeEndTimeStamp) {
+                recipeStartDateTime = timeConverter(recipeStartTimeStamp);
+                speechOutput = "Recipe "+recipeStartName+" has been running since "+recipeStartDateTime+".";
+            } else {
+                speechOutput = "No recipe is currently running.";
+            }
+
+            var d = new Date();
+            var n = d.getTime();
+            var dateTime = timeConverter(n / 1000);
+
+            if (supportsDisplay.call(this) || isSimulator.call(this)) {
+                let content = {
+                    "hasDisplaySpeechOutput" : speechOutput,
+                    "title" : "Recipe information at "+dateTime+".",
+                    "textContent" : speechOutput,
+                    "templateToken" : "SingleItemView",
+                    "askOrTell": ":tell",
+                    "sessionAttributes" : this.attributes
+                };
+                renderTemplate.call(this, content);
+            } else {
+                this.emit(":tell", speechOutput);
+            }
+        });
+    },
     '_GetDiagnosticInfo': function () { // not using - looks like the ros topic /diagnostic is deprecated?
         const method   = "GET",
               path     = "/_openag/api/0.0.1/topic_data/diagnostics",
