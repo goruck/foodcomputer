@@ -146,7 +146,7 @@ var handlers = {
          * This will speed up queries but results in slighty out of data info returned.
          * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
          */
-        var _camera = (cameraName === "top" ? "aerial_image" : "side_image");
+        var _camera = (cameraName === "top" ? "aerial_image" : "frontal_image");
         var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?" +
                         "reduce=true\&stale=update_after" +
                         "\&startkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22]" +
@@ -204,7 +204,7 @@ var handlers = {
 
                      let content = {
                          "hasDisplaySpeechOutput" : "showing" + cameraName + "camera",
-                         "bodyTemplateContent" : cameraName + " " + dateTime,
+                         "bodyTemplateContent" : dateTime,
                          "templateToken" : "ShowImage",
                          "askOrTell": ":tell",
                          "sessionAttributes" : this.attributes
@@ -907,12 +907,12 @@ function renderTemplate (content) {
                 "backButton": "HIDDEN",
                 "template": {
                   "type": "BodyTemplate6",
-                  //"title": content.bodyTemplateTitle,
+                  //"title": content.title,
                   "token": content.templateToken,
                   "textContent": {
                     "primaryText": {
                       "type": "RichText",
-                      "text": "<font size = '7'>"+content.bodyTemplateContent+"</font>"
+                      "text": "<font size = '3'>"+content.bodyTemplateContent+"</font>"
                     }
                   }
                 }
