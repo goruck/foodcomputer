@@ -199,12 +199,13 @@
         "show {camera} camera",
         "show {camera}",
         "show plants",
-        "show me my plants"
+        "show me my plants",
+        "show {camera} view"
       ],
       "slots": [
         {
           "name": "camera",
-          "type": "CAMERA_LOCATION",
+          "type": "CAMERA_VIEW",
           "samples": []
         }
       ]
@@ -237,20 +238,34 @@
   ],
   "types": [
     {
-      "name": "CAMERA_LOCATION",
+      "name": "CAMERA_VIEW",
       "values": [
         {
           "id": null,
           "name": {
             "value": "top",
-            "synonyms": []
+            "synonyms": [
+              "aerial"
+            ]
           }
         },
         {
           "id": null,
           "name": {
             "value": "side",
-            "synonyms": []
+            "synonyms": [
+              "frontal"
+            ]
+          }
+        },
+        {
+          "id": null,
+          "name": {
+            "value": "measurement",
+            "synonyms": [
+              "metrics",
+              "measurements"
+            ]
           }
         }
       ]
