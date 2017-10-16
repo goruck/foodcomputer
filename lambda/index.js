@@ -91,10 +91,10 @@ var handlers = {
             }
 
             var obj = JSON.parse(resStr);
-            if (obj.result === "OK") {
+            if (obj.data === "OK") {
                 speechOutput =  "The food computer is operating normally.";
             } else { // the arduino has a warning or an error
-                speechOutput = obj.result;
+                speechOutput = obj.data;
             }
 
             var d = new Date();
@@ -116,7 +116,7 @@ var handlers = {
             }
         });
     },
-    "ShowImage": function() {
+    "_ShowImage": function() { // couchDB version
         console.log("Show Image event: " + JSON.stringify(this.event));
 
         // Check to see if device has a display (or is the simulator).
@@ -214,6 +214,85 @@ var handlers = {
                      }
                      renderTemplate.call(this, content);
                 });
+            });
+        });
+    },
+    "ShowImage": function() { // openag api version
+        console.log("Show Image event: " + JSON.stringify(this.event));
+
+        // Check to see if device has a display (or is the simulator).
+        if (!supportsDisplay.call(this) && !isSimulator.call(this)) {
+            this.response.speak("sorry, cannot show image since this device has no display");
+            this.emit(":responseReady");
+            return;
+        }
+        
+        // Default to top camera normal view if slot comes in undefined
+        var cameraView = "";
+        if (this.event.request.intent.slots.camera.value === undefined) {
+            cameraView = "top"; 
+        } else {
+            cameraView = this.event.request.intent.slots.camera.value.toLowerCase();
+        }
+
+        // Check validity of user request and map to food computer db var names.
+        const cameraMapping = {
+            "top" : "aerial_image/image_raw",
+            "side" : "frontal_image/image_raw",
+            "measurement" : "aerial_image/image_rect_color/ObjectDetectorAndBlobDetector"
+        }
+        if (!cameraMapping.hasOwnProperty(cameraView)) {
+            // Bad request.
+            console.log("ERROR ShowImage: bad request: " + cameraView);
+            this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+            return;
+        }
+        const path = "/_openag/api/0.0.1/topic_data";
+        var pfcImagePath = path + "/environments/environment_1/" + cameraMapping[cameraView];
+        
+        // Get image from food computer openag api, place in S3 bucket and display it on a capable device.
+        httpsReq("GET", pfcImagePath, "", false, (err, pfcImage) => {
+            if (err) {
+                console.log("ERROR ShowImage: httpsReq: " + err);
+                this.response.speak("sorry, I can't complete the request");
+                this.emit(":responseReady");
+                return;
+             }
+
+             if (!isPng(pfcImage)) {
+                 console.log("ERROR ShowImage: https request didn't get a valid png image");
+                 this.response.speak("sorry, I can't complete the request");
+                 this.emit(":responseReady");
+                 return;
+             }
+
+             const s3BucketName = "foodcomputer-images";
+             const s3ImagePath = "https://s3.amazonaws.com/" + s3BucketName + "/";
+             const s3ImageName = "pfc-image.png";
+             putS3File(s3BucketName, s3ImageName, pfcImage, (err, data) => {
+                 if (err) {
+                     console.log("ERROR ShowImage: puts3File error: " + err);
+                     this.response.speak("sorry, I can't complete the request");
+                     this.emit(":responseReady");
+                     return;
+                 }
+
+                 var d = new Date();
+                 var n = d.getTime();
+                 var dateTime = timeConverter(n / 1000);
+
+                 let content = {
+                     "hasDisplaySpeechOutput" : "showing" + cameraView + "view",
+                     "bodyTemplateContent" : dateTime,
+                     "templateToken" : "ShowImage",
+                     "askOrTell": ":tell",
+                     "sessionAttributes" : this.attributes
+                 };
+                 if (USE_IMAGES_FLAG) {
+                    content["backgroundImageUrl"] = s3ImagePath + s3ImageName;
+                 }
+                 renderTemplate.call(this, content);
             });
         });
     },
@@ -489,7 +568,7 @@ function getParameterValue(desired /*true if desired*/, parameter) { // openag b
                 var obj = safelyParseJSON(resStr);
 
                 if (obj) {
-                    var paramValue = obj.result;
+                    var paramValue = obj.data;
                     var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
                     speechOutput = "The value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
                                    " is " + paramValueOut + " " + getParamUnits(foodcomputerParam) + ".";
@@ -767,7 +846,7 @@ var httpsReq = (method, path, postData, text, callback) => {
 
     // Set timeout on socket inactivity. 
     req.on("socket", function (socket) {
-        socket.setTimeout(5000); // 5 sec timeout. 
+        socket.setTimeout(10000); // 10 sec timeout. 
         socket.on("timeout", function() {
             req.abort();
         });
