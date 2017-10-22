@@ -116,7 +116,7 @@ var handlers = {
             }
         });
     },
-    "_ShowImage": function() { // couchDB version
+    "ShowImage": function() { // couchDB version
         console.log("Show Image event: " + JSON.stringify(this.event));
 
         // Check to see if device has a display (or is the simulator).
@@ -125,32 +125,77 @@ var handlers = {
             this.emit(":responseReady");
             return;
         }
-        
-        var cameraName = "";
-        if (this.event.request.intent.slots.camera.value !== undefined) {
-           cameraName = this.event.request.intent.slots.camera.value.toLowerCase();
+
+        // Default to top camera normal view if camera slot comes in undefined
+        var cameraView = "";
+        if (this.event.request.intent.slots.camera.value === undefined) {
+            cameraView = "top"; 
+        } else {
+            cameraView = this.event.request.intent.slots.camera.value.toLowerCase();
         }
 
         // Check validity of user request and map to food computer db var names.
-        if (!(cameraName === "top") && !(cameraName === "side")) {
+        const cameraMapping = {
+            "top" : "aerial_image/image_raw",
+            "side" : "frontal_image/image_raw",
+            "measurement" : "aerial_image/image_rect_color/ObjectDetectorAndBlobDetector"
+        }
+        if (!cameraMapping.hasOwnProperty(cameraView)) {
             // Bad request.
-            console.log("ERROR ShowImage: bad request: " + cameraName);
+            console.log("ERROR ShowImage: bad request: " + cameraView);
             this.response.speak("sorry, I can't complete the request");
             this.emit(":responseReady");
             return;
         }
 
-        /*
-         * Query food computer database for requested image and get path of the most recent.
-         * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
-         * This will speed up queries but results in slighty out of data info returned.
-         * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
-         */
-        var _camera = (cameraName === "top" ? "aerial_image" : "frontal_image");
-        var queryPath = "/environmental_data_point/_design/openag/_view/by_variable?" +
+        var _camera = cameraMapping[cameraView];
+        var queryPath = "";
+        if (this.event.request.intent.slots.duration.value === undefined) { // Defaults to now (most recent image)
+            /*
+             * Form CounchDB query for most recent image. 
+             * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
+             * This will speed up queries but results in slighty out of data info returned.
+             * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
+             */
+            queryPath = "/environmental_data_point/_design/openag/_view/by_variable?" +
                         "reduce=true\&stale=update_after" +
                         "\&startkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22]" +
                         "\&endkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22,{}]";
+        } else {
+            var durationString = this.event.request.intent.slots.duration.value; // A duration string in ISO 8601 format
+
+            var duration = parseISO8601Duration(durationString);
+
+            if (duration.years || duration.months) { // Too far back...
+                console.log("ERROR ShowImage: Requested view too long ago");
+                inspectLogObj(duration, 1);
+                this.response.speak("Sorry, I can't complete the request. That's too long ago.");
+                this.emit(":responseReady");
+                return;
+            }
+
+            // Get current Epoch timestamp in seconds.
+            var d = new Date();
+            var currentTs = d.getTime() / 1000;
+
+            // Calculate query start and end times based on current timestamp.
+            var queryStartTime = currentTs - (duration.weeks * 604800)
+                                           - (duration.days  * 86400)
+                                           - (duration.hours * 3600)
+                                           - (duration.minutes * 60)
+                                           - (duration.seconds);
+            // Make query span one hour - should catch at least one image.
+            var queryEndTime = queryStartTime + 3600;
+            //console.log("qstart: "+queryStartTime+" qend: "+queryEndTime);
+
+            // Form CouchDB query for past image. 
+            queryPath = "/environmental_data_point/_design/openag/_view/by_variable?" +
+                        "reduce=false" +
+                        "\&startkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22,"+queryStartTime+"]" +
+                        "\&endkey=[%22environment_1%22,%22measured%22,%22"+_camera+"%22,"+queryEndTime+"]";
+        }
+        
+        // Query food computer database for requested image and get its ID and timestamp.
         httpsReq("GET", queryPath, "", true, (err, result) => {
             if (err) {
                 console.log("ERROR ShowImage: httpsReq: " + err);
@@ -162,18 +207,18 @@ var handlers = {
             var obj = safelyParseJSON(result);
             if (!obj || !obj.rows[0]) {
                 console.log("ERROR ShowImage: food computer db query didn't return anything");
-                this.response.speak("sorry, I can't complete the request");
+                this.response.speak("Sorry, I can't complete the request. No image was found.");
                 this.emit(":responseReady");
                 return;
             }
 
-            var ts = obj.rows[0].value.timestamp; // timestamp of most recent image in Unix epoch time
-            //console.log("ts: " + ts);
-            var dateTime = timeConverter(ts);
-            //console.log("dateTime: " + dateTime);
-            var id = obj.rows[0].value._id; // id of most recent image
-            //console.log("id: " + id);
-            var pfcImagePath = "/environmental_data_point/" + id + "/image";
+            // Actual timestamp of image in Unix epoch time. Should be close to what user requested. 
+            var imageTs = obj.rows[0].value.timestamp;
+            // ID of image.
+            var imageId = obj.rows[0].value._id;
+
+            // Path to requested image. 
+            var pfcImagePath = "/environmental_data_point/" + imageId + "/image";
 
             // Get image from food computer db, place in S3 bucket and display it on a capable device.
             httpsReq("GET", pfcImagePath, "", false, (err, pfcImage) => {
@@ -203,8 +248,8 @@ var handlers = {
                      }
 
                      let content = {
-                         "hasDisplaySpeechOutput" : "showing" + cameraName + "camera",
-                         "bodyTemplateContent" : dateTime,
+                         "hasDisplaySpeechOutput" : "showing" + cameraView + "view",
+                         "bodyTemplateContent" : timeConverter(imageTs),
                          "templateToken" : "ShowImage",
                          "askOrTell": ":tell",
                          "sessionAttributes" : this.attributes
@@ -217,7 +262,7 @@ var handlers = {
             });
         });
     },
-    "ShowImage": function() { // openag api version
+    "_ShowImage": function() { // openag api version
         console.log("Show Image event: " + JSON.stringify(this.event));
 
         // Check to see if device has a display (or is the simulator).
@@ -1248,6 +1293,31 @@ function timeConverter(unix_timestamp) {
    var formattedTime = year+"-"+month+"-"+day+" "+hours+":"+minutes.substr(-2)+":"+seconds.substr(-2);
    return formattedTime;
 }
+
+/*
+ * Parse ISO8501 duration string.
+ * See https://stackoverflow.com/questions/27851832/how-do-i-parse-an-iso-8601-formatted-duration-using-moment-js
+ *
+ */
+function parseISO8601Duration(durationString) {
+    // regex to parse ISO8501 duration string.
+    // TODO: optimize regex since it matches way more than needed.
+    var iso8601DurationRegex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/;
+
+    var matches = durationString.match(iso8601DurationRegex);
+    //console.log("parseISO8601Duration matches: " +matches);
+
+    return {
+        years: matches[3] === undefined ? 0 : parseInt(matches[3]),
+        months: matches[5] === undefined ? 0 : parseInt(matches[5]),
+        weeks: matches[7] === undefined ? 0 : parseInt(matches[7]),
+        days: matches[9] === undefined ? 0 : parseInt(matches[9]),
+        hours: matches[12] === undefined ? 0 : parseInt(matches[12]),
+        minutes: matches[14] === undefined ? 0 : parseInt(matches[14]),
+        seconds: matches[16] === undefined ? 0 : parseInt(matches[16])
+    };
+}
+
 /*
  * Checks if a file is a png image.
  * https://stackoverflow.com/questions/8473703/in-node-js-given-a-url-how-do-i-check-whether-its-a-jpg-png-gif/8475542#8475542
