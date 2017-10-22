@@ -196,16 +196,30 @@
     {
       "name": "ShowImage",
       "samples": [
-        "show {camera} camera",
-        "show {camera}",
+        "show {camera} camera {duration} ago",
+        "show {camera} {duration} ago",
         "show plants",
         "show me my plants",
-        "show {camera} view"
+        "show {camera} view {duration} ago",
+        "show me my plants {duration} ago",
+        "show plants {duration} ago",
+        "show {camera} view",
+        "show {camera}",
+        "show {camera} camera",
+        "show {camera} camera from {duration} ago",
+        "show {camera} from {duration} ago",
+        "show plants from {duration} ago",
+        "show me my plants from {duration} ago"
       ],
       "slots": [
         {
           "name": "camera",
           "type": "CAMERA_VIEW",
+          "samples": []
+        },
+        {
+          "name": "duration",
+          "type": "AMAZON.DURATION",
           "samples": []
         }
       ]
