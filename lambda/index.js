@@ -66,15 +66,10 @@ var handlers = {
             }
         }
     },
-    'GetDesiredParameterValue': function () {
+    'GetParameterValue': function () {
+        console.log("GetParameterValue event: " + JSON.stringify(this.event));
         var parameter = this.event.request.intent.slots.parameter.value;
-        var desired = true; // get desired parameters
-        getParameterValue.call(this, desired, parameter);
-    },
-    'GetMeasuredParameterValue': function () {
-        var parameter = this.event.request.intent.slots.parameter.value;
-        var desired = false; // get measured parameters
-        getParameterValue.call(this, desired, parameter);
+        getParameterValue.call(this, parameter);
     },
     'GetDiagnosticInfo': function () {
         const method   = "GET",
@@ -590,37 +585,74 @@ exports.handler = (event, context) => {
 //===================== Food Computer Helper Functions  ========================
 //==============================================================================
 /*
+ * Get a value of a measured parameter and the desired value if set.
+ * This uses OpenAg Brain APIs (which are proxied by CouchDB). 
  *
  */
-function getParameterValue(desired /*true if desired*/, parameter) { // openag brain api version
+function getParameterValue(parameter) {
+
     // Check user request for validity.
-    var parameterLowerCase = parameter.toLowerCase(); // no guarantee that Alexa ASR will return value in lower case
-    var isValidParameter = checkIfParamIsValid(parameterLowerCase);
+    if (!checkIfParamIsValid(parameter)) {
+        console.log("ERROR getParameterValue: bad request: " + parameter);
+        this.response.speak("error, " + parameter + " is not a valid parameter");
+        this.emit(":responseReady");
+        return;
+    }
 
-    if (isValidParameter) { // parameter valid
-        var foodcomputerParam = alexaParamToFoodcomputerParam(parameterLowerCase);
-        const method   = "GET",
-              pathBase = "/_openag/api/0.0.1/topic_data/environments/environment_1/",
-              path     = pathBase + foodcomputerParam + (desired ? "/desired" : "/measured"),
-              postData = "",
-              text     = true;
+    // Convert user friendly names to food computer param names.
+    var parameterLowerCase = parameter.toLowerCase();
+    var foodcomputerParam = alexaParamToFoodcomputerParam(parameterLowerCase);
 
+    // Get the value of a measured param.
+    const method   = "GET",
+          pathBase = "/_openag/api/0.0.1/topic_data/environments/environment_1/",
+          postData = "",
+          text     = true;
+    var path = pathBase + foodcomputerParam + "/measured";
+    httpsReq (method, path, postData, text, (err, resStr) => {
+        if (err) {
+            console.log("ERROR getParameterValue: measured httpsReq: " + err);
+            this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+            return;
+        }
+
+        var measuredObj = safelyParseJSON(resStr);
+        if (measuredObj === null || measuredObj.hasOwnProperty("error")) {
+            console.log("ERROR getParameterValue: measured parse json");
+            this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+            return;
+        }
+
+        var measuredParamValue = measuredObj.data;
+
+        // Get the value of the corresponding desired param (if set) and output resp.
+        path = pathBase + foodcomputerParam + "/desired";
         httpsReq (method, path, postData, text, (err, resStr) => {
             if (err) {
-                speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
-                               parameterLowerCase +".";
-            } else {
-                var obj = safelyParseJSON(resStr);
+                console.log("ERROR getParameterValue: desired httpsReq: " + err);
+                this.response.speak("sorry, I can't complete the request");
+                this.emit(":responseReady");
+                return;
+            }
 
-                if (obj) {
-                    var paramValue = obj.data;
-                    var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
-                    speechOutput = "The value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
-                                   " is " + paramValueOut + " " + getParamUnits(foodcomputerParam) + ".";
-                } else {
-                    speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
-                                   parameterLowerCase + ".";
-                }
+            var desiredObj = safelyParseJSON(resStr);
+            var desiredParamValue = NaN;
+            if (desiredObj !== null && measuredObj.hasOwnProperty("data")) {
+                desiredParamValue = desiredObj.data;
+            }
+
+            speechOutput = ""; // global vars get cached by lambda between runs...
+
+            // Format measured parameter value response.
+            var measuredParamValueOut = (measuredParamValue === 0 ? measuredParamValue : measuredParamValue.toFixed(2));
+            speechOutput += "Measured "+parameterLowerCase+" is "+measuredParamValueOut+" "+getParamUnits(foodcomputerParam)+".";
+
+            // If a desired parameter value was found, include in the response. 
+            if (!isNaN(desiredParamValue)) {
+                var desiredParamValueOut = (desiredParamValue === 0 ? desiredParamValue : desiredParamValue.toFixed(2));
+                speechOutput += " Desired "+parameterLowerCase+" is "+desiredParamValueOut+" "+getParamUnits(foodcomputerParam)+".";
             }
 
             // Get timestamp of parameter value which is about the current time. 
@@ -628,6 +660,7 @@ function getParameterValue(desired /*true if desired*/, parameter) { // openag b
             var n = d.getTime(); // Number of milliseconds since 1970/01/01.
             var dateTime = timeConverter(n / 1000);
 
+            // Output to an Alexa device.
             if (supportsDisplay.call(this) || isSimulator.call(this)) {
                 let content = {
                     "hasDisplaySpeechOutput" : speechOutput,
@@ -642,82 +675,111 @@ function getParameterValue(desired /*true if desired*/, parameter) { // openag b
                 this.emit(":tell", speechOutput);
             }
         });
-    } else { // parameter not valid
-        speechOutput = "error, " + parameterLowerCase + " is not a valid parameter";
-        this.emit(":tell", speechOutput);
-    }
+    });
+
 }
 
 /*
- *
+ * Get a value of a measured parameter and its desired value if set and relevant.
+ * This uses CouchDB APIs.
  */
-function _getParameterValue(desired /*true if desired*/, parameter) {
-    // CouchDB version.
-    // Can be slow w/o update_after in CouchDB query but first result may be stale.
+function _getParameterValue(parameter) {
 
     // Check user request for validity.
-    var parameterLowerCase = parameter.toLowerCase(); // no guarantee that Alexa ASR will return value in lower case
-    var isValidParameter = checkIfParamIsValid(parameterLowerCase);
-
-    if (isValidParameter) { // parameter valid
-        var foodcomputerParam = alexaParamToFoodcomputerParam(parameterLowerCase);
-        const method   = "GET",
-              path     = "/environmental_data_point/_design/openag/_view/by_variable?stale=update_after\&group_level=3",
-              postData = "",
-              text     = true;
-
-        httpsReq (method, path, postData, text, (err, resStr) => {
-            if (err) {
-                speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
-                               parameterLowerCase +".";
-            } else {
-                var obj = safelyParseJSON(resStr);
-
-                if (obj) {
-                    var paramValue = NaN;
-                    var paramTimeStamp = NaN;
-                    for (var i = 0; i < obj.rows.length; i++) { // search json obj for the requested information
-                        if (obj.rows[i].value.variable === foodcomputerParam && 
-                            obj.rows[i].value.is_desired === desired) { // found a match
-                            paramValue = obj.rows[i].value.value;
-                            paramTimeStamp = timeConverter(obj.rows[i].value.timestamp);
-                            break;
-                        }
-                    }
-                    var paramValueOut = (paramValue === 0 ? paramValue : paramValue.toFixed(2)); // make it sound nice
-
-                    if (!isNaN(paramValueOut)) {
-                        speechOutput = "The value of " + (desired ? "desired " : "measured ") + parameterLowerCase +
-                                       " is " + paramValueOut + " " + getParamUnits(foodcomputerParam) + ".";
-                    } else {
-                        speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
-                                       parameterLowerCase + ".";
-                    }
-
-                } else {
-                    speechOutput = "Error, could not get the value of " + (desired ? "desired " : "measured ") +
-                                   parameterLowerCase + ".";
-                }
-            }
-
-            if (supportsDisplay.call(this) || isSimulator.call(this)) {
-                let content = {
-                    "hasDisplaySpeechOutput" : speechOutput,
-                    "title" : "Parameter Value at " + paramTimeStamp + ".",
-                    "textContent" : speechOutput,
-                    "templateToken" : "SingleItemView",
-                    "askOrTell": ":tell",
-                    "sessionAttributes" : this.attributes
-                };
-                renderTemplate.call(this, content);
-            } else {
-                this.emit(":tell", speechOutput);
-            }
-        });
-    } else { // parameter not valid
-        speechOutput = "error, " + parameterLowerCase + " is not a valid parameter";
-        this.emit(":tell", speechOutput);
+    if (!checkIfParamIsValid(parameter)) {
+        console.log("ERROR getParameterValue: bad request: " + parameter);
+        this.response.speak("error, " + parameter + " is not a valid parameter");
+        this.emit(":responseReady");
+        return;
     }
+
+    // Query food computer CouchDB and search it for requested parameter.
+    // Using "stale=update_after" which speeds things up but values returned may be out of date.
+    const method   = "GET",
+          path     = "/environmental_data_point/_design/openag/_view/by_variable?stale=update_after\&group_level=3",
+          postData = "",
+          text     = true;
+    httpsReq (method, path, postData, text, (err, resStr) => {
+        if (err) {
+            console.log("ERROR getParameterValue: httpsReq: " + err);
+            this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+            return;
+        }
+
+        var obj = safelyParseJSON(resStr);
+        if (!obj) {
+            console.log("ERROR getParameterValue: safelyParseJSON");
+            this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+            return;
+        }
+
+        var parameterLowerCase = parameter.toLowerCase();
+        var foodcomputerParam = alexaParamToFoodcomputerParam(parameter);
+
+        // Search json obj for requested param values and recipe start / end info. 
+        var desiredParamValue      = NaN;
+        var desiredParamTimeStamp  = 0;
+        var measuredParamValue     = NaN;
+        var measuredParamTimeStamp = 0;
+        var recipeStartTimeStamp   = 0;
+        var recipeEndTimeStamp     = 0;
+        for (var i = 0, len = obj.rows.length; i < len; i++) {
+            if (obj.rows[i].value.variable===foodcomputerParam&&obj.rows[i].value.is_desired===true) {
+                desiredParamValue = obj.rows[i].value.value;
+                desiredParamTimeStamp = timeConverter(obj.rows[i].value.timestamp);
+                continue;
+            } else if (obj.rows[i].value.variable===foodcomputerParam&&obj.rows[i].value.is_desired===false) {
+                measuredParamValue = obj.rows[i].value.value;
+                measuredParamTimeStamp = timeConverter(obj.rows[i].value.timestamp);
+                continue;
+            } else if (obj.rows[i].key[1]==="desired"&&obj.rows[i].key[2]==="recipe_start") {
+                recipeStartTimeStamp = obj.rows[i].value.timestamp;
+                continue;
+            } else if (obj.rows[i].key[1]==="desired"&&obj.rows[i].key[2]==="recipe_end") {
+                recipeEndTimeStamp = obj.rows[i].value.timestamp;
+                continue;
+            }
+        }
+
+        // There must be at least one measured value otherwise some error happened.
+        if (isNaN(measuredParamValue)) {
+            console.log("ERROR getParameterValue: no measured parm");
+            this.response.speak("sorry, I can't complete the request");
+            this.emit(":responseReady");
+            return;
+        }
+
+        speechOutput = ""; // global vars get cached by lambda between runs...
+
+        // Format measured parameter value response.
+        var measuredParamValueOut = (measuredParamValue === 0 ? measuredParamValue : measuredParamValue.toFixed(2));
+        speechOutput += "Measured "+parameterLowerCase+" is "+measuredParamValueOut+" "+getParamUnits(foodcomputerParam)+".";
+
+        // If a desired parameter value was found and a recipe is running include in the response.
+        // (If a recipe isn't running ignore desired values because they are no longer in effect.)
+        if (!isNaN(desiredParamValue) && (recipeStartTimeStamp > recipeEndTimeStamp)) {
+            var desiredParamValueOut = (desiredParamValue === 0 ? desiredParamValue : desiredParamValue.toFixed(2));
+            speechOutput += " Desired "+parameterLowerCase+" is "+desiredParamValueOut+" "+getParamUnits(foodcomputerParam)+".";
+        }
+
+        // Output to an Alexa device. 
+        if (supportsDisplay.call(this) || isSimulator.call(this)) {
+            let content = {
+                "hasDisplaySpeechOutput" : speechOutput,
+                "title" : "Measured parameter value at "+measuredParamTimeStamp+".",
+                "textContent" : speechOutput,
+                "templateToken" : "SingleItemView",
+                "askOrTell": ":tell",
+                "sessionAttributes" : this.attributes
+            };
+            renderTemplate.call(this, content);
+        } else {
+            this.emit(":tell", speechOutput);
+        }
+    });
+
 }
 
 /*
