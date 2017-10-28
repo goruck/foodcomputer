@@ -57,39 +57,6 @@
       "samples": []
     },
     {
-      "name": "GetDesiredParameterValue",
-      "samples": [
-        "value for desired {parameter} ",
-        "to get value of desired {parameter} ",
-        "to fetch value of desired {parameter} ",
-        "for value of desired {parameter} ",
-        "to get value for desired {parameter} ",
-        "value of desired {parameter} ",
-        "for the value of desired {parameter} ",
-        "the value of desired {parameter} ",
-        "value desired {parameter} ",
-        "the value desired {parameter} ",
-        "to get the value of desired {parameter} ",
-        "to fetch the value of desired {parameter} ",
-        "to fetch the value for desired {parameter} ",
-        "for desired {parameter} ",
-        "for the desired {parameter} ",
-        "the desired {parameter} ",
-        "its desired {parameter} ",
-        "what its desired {parameter} is",
-        "what is its desired {parameter}",
-        "for its desired {parameter} ",
-        "desired {parameter} "
-      ],
-      "slots": [
-        {
-          "name": "parameter",
-          "type": "PARAMETER_SLOT_TYPE",
-          "samples": []
-        }
-      ]
-    },
-    {
       "name": "GetDiagnosticInfo",
       "samples": [
         "get diagnostics",
@@ -107,28 +74,8 @@
       "slots": []
     },
     {
-      "name": "GetMeasuredParameterValue",
+      "name": "GetParameterValue",
       "samples": [
-        "value for measured {parameter} ",
-        "to get value of measured {parameter} ",
-        "to fetch value of measured {parameter} ",
-        "for value of measured {parameter} ",
-        "to get value for measured {parameter} ",
-        "value of measured {parameter} ",
-        "for the value of measured {parameter} ",
-        "the value of measured {parameter} ",
-        "value measured {parameter} ",
-        "the value measured {parameter} ",
-        "to get the value of measured {parameter} ",
-        "to fetch the value of measured {parameter} ",
-        "to fetch the value for measured {parameter} ",
-        "for measured {parameter} ",
-        "for the measured {parameter} ",
-        "the measured {parameter} ",
-        "its measured {parameter} ",
-        "what its measured {parameter} is",
-        "what is its measured {parameter}",
-        "for its measured {parameter} ",
         "value for {parameter} ",
         "to get value of {parameter} ",
         "to fetch value of {parameter} ",
@@ -149,7 +96,7 @@
         "what its {parameter} is",
         "what is its {parameter}",
         "for its {parameter} ",
-        "measured {parameter} "
+        "to get {parameter}"
       ],
       "slots": [
         {
