@@ -485,7 +485,7 @@ var handlers = {
             var recipeStartName      = "";
             var recipeEndTimeStamp   = 0;
             var recipeEndName        = "";
-            for (var i = 0; i < obj.rows.length; i++) {
+            for (var i = 0, len = obj.rows.length; i < len; i++) {
                 if (obj.rows[i].key[1] === "desired" && obj.rows[i].key[2] === "recipe_start") {
                     recipeStartTimeStamp = obj.rows[i].value.timestamp;
                     recipeStartName = obj.rows[i].value.value;
@@ -589,7 +589,7 @@ exports.handler = (event, context) => {
  * This uses OpenAg Brain APIs (which are proxied by CouchDB). 
  *
  */
-function getParameterValue(parameter) {
+function _getParameterValue(parameter) {
 
     // Check user request for validity.
     if (!checkIfParamIsValid(parameter)) {
@@ -683,7 +683,7 @@ function getParameterValue(parameter) {
  * Get a value of a measured parameter and its desired value if set and relevant.
  * This uses CouchDB APIs.
  */
-function _getParameterValue(parameter) {
+function getParameterValue(parameter) {
 
     // Check user request for validity.
     if (!checkIfParamIsValid(parameter)) {
@@ -1470,7 +1470,7 @@ function mkPlotlyFigFromJson(res, graphTitle, xaxisTitle, yaxisTitle) {
     var xPoints = [];
     var yPoints = [];
 
-    for (var i = 0; i < obj.rows.length; i++) {
+    for (var i = 0, len = obj.rows.length; i < len; i++) {
          var time = timeConverter(obj.rows[i].value.timestamp);
          xPoints.push(time);
          yPoints.push(obj.rows[i].value.value);
@@ -1508,7 +1508,7 @@ function mkPlotlyFigFromCsv(buf, graphTitle, xaxisTitle, yaxisTitle) {
         var xPoints = [];
         var yPoints = [];
         // Skip first (header) line and stop on last line.
-        for (var l = 1; l <= lines.length - 1; l++) {
+        for (var l = 1, len = lines.length; l <= len - 1; l++) {
             // Decimate data to speed up plotly -- has no effect?
             //if (l % deciBy) continue;
             // Splits each line of csv by comma.
