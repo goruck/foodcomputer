@@ -72,7 +72,7 @@ Spoken Parameter | Food Computer Database Parameter
 
 # Personal Food Computer Preparation
 
-## Installing Openag_brain on the Food Computer's Raspberry Pi
+## Installing OpenAg_Brain (openag_brain) on the Food Computer's Raspberry Pi
 1. Download [Raspbian Jessie Lite](https://www.raspberrypi.org/downloads/raspbian/).
 2. Download [Etcher](https://etcher.io/).
 3. Use Etcher to write Raspbian image to a micro SD card. I used a 64GB card.
@@ -125,7 +125,7 @@ $ ./scripts/firmware -t upload
 $ rosrun openag_brain main personal_food_computer_v2.launch
 ```
 
-## Install the Openag User Interface (openag_ui)
+## Install the OpenAg User Interface (openag_ui) on the Food Computer's Raspberry Pi
 1. [Install NodeJs and NPM for openag_ui](https://tecadmin.net/install-latest-nodejs-npm-on-debian/):
 ```bash
 $ sudo apt-get install curl python-software-properties
@@ -134,7 +134,7 @@ $ sudo apt-get install nodejs
 ```
 2. [Clone openag_ui source code](https://github.com/OpenAgInitiative/openag_ui):
 ```bash
-$ git clone https://github.com/OpenAgInitiative/openag_ui
+$ git clone https://github.com/OpenAgInitiative/openag_ui ~/
 ```
 3. [Build and Deploy the UI](https://github.com/OpenAgInitiative/openag_ui):
 ```bash
@@ -144,6 +144,12 @@ $ npm run couchapp_deploy --app_db_url="http://localhost:5984/app"
 ```
 4. Test that the UI works Ok:
 Open your browser to http://localhost:5984/app/_design/app/_rewrite.
+
+## Install OpenAg Computer Vision (openag_cv) on the Food Computer's Raspberry Pi
+Clone my fork of openag_brain source code:
+```bash
+git clone https://github.com/goruck/openag_cv.git ~/catkin_ws/src/openag_cv
+```
 
 ## Misc Setup and Configuration
 1. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
