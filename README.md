@@ -1,13 +1,13 @@
-*This is still very much a work in progress.*
+*The Food Computer Alexa skill is now in beta test! Please send me an e-mail to be a part of the beta and you'll be able to use the skill to interact with my food computer on your Echo devices. Any feedback is welcome*
 
 # Alexa OpenAg Personal Food Computer
 This describes how to use Amazon's Alexa to create a voice user interface to the OpenAg Personal Food Computer (PFC). I was very fortunate to meet the leaders of Fenome and got the opportunity to build my own OpenAg PFC which is now in use at my home. I thought I'd give back to Fenome and the OpenAg community by integrating Amazon's Alexa with the PFC. I find the PFC an amazing device and the OpenAg initiative inspiring! I hope people find the PFC even more useful with Alexa.
 
-This Alexa skill is not yet published. If you want to try it out right now you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application. 
+This Alexa skill is in beta test. If you want to try it out right now you can either be included in my beta test and interact with my PFC via my skill on your own Echo device or fork my code and run it as your own skill if you have your own PFC.
 
-The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. I've made some modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my fork of openag_brain. 
+To write your own version of this skill you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application.
 
-Eventually I will publish the skill (pending approval by Amazon) so anyone with a Food Computer can use it without needing to clone this repo. 
+The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. I've made modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my "cv" [fork](https://github.com/goruck/openag_brain/tree/cv) of openag_brain. I've also made modifications to the openag_cv source to get it to work with an integrated openag_brain configuration, so you need to use my [fork](https://github.com/goruck/openag_cv) of openag_cv as well.
 
 Here are some examples of what you can do.
 
@@ -15,30 +15,27 @@ Example User Request | Note
 ---------------------|------------------
 **Get information about the recipe being used**
 "Alexa, ask Food Computer for recipe information" | Returns current recipe name and when started
-**Show graph of a parameter if Echo device has a display**
-"Alexa, ask Food Computer to show air carbon dioxide" | Default is to graph over last 24 hours
-"Alexa, ask Food Computer to show {parameter}" | See below for list of paramters supported
-**Show camera image if Echo device has a display**
+**Show graph of a parameter (if Echo device has a display)**
+"Alexa, ask Food Computer to graph air carbon dioxide" | Default is to graph over last 24 hours
+"Alexa, ask Food Computer to graph {parameter}" | See below for list of parameters supported
+**Show camera image (if Echo device has a display)**
 "Alexa, ask Food Computer to show top camera" | Displays latest image from aerial camera
 "Alexa, ask Food Computer to show side camera" | Latest image from side camera
 "Alexa, ask Food Computer to show top camera {time} ago" | Top camera image from specified past time
+"Alexa, ask Food Computer to show measurement view" | Shows plant size and number of leaves (uses openag_cv)
 **Get plant health and any issues that need attention**
 "Alexa, ask Food Computer how my plants are" | *in progress*
 **Get Food Computer diagnostics information**
 "Alexa, ask Food Computer for diagnostics" | Returns the health of the system
 "Alexa, ask Food Computer how its feeling" | alt way of asking for diags
-**Get the value of a desired parameter**
-“Alexa, ask Food Computer for desired air carbon dioxide” | Returns desired air CO2 in ppm
-"Alexa, ask Food Computer what the desired air humidity is" | Many alt ways of asking for a parameter are supported
-“Alexa, ask Food Computer for desired {parameter}” | See below for list of parameters supported
 **Set the value of a desired parameter**
 "Alexa ask Food Computer to set air temperature to 30 degrees" | *in progress*
-**Get the value of a measured parameter**
-“Alexa, ask Food Computer for measured air carbon dioxide” | Returns measured air CO2 in ppm
-“Alexa, ask Food Computer for air carbon dioxide” | Omitting measured or desired defaults to measured
+**Get the value of a measured parameter (and desired parameter if set)**
+“Alexa, ask Food Computer for air carbon dioxide” | Returns measured air CO2 in ppm
+“Alexa, ask Food Computer for air temperature” | Returns measured air temp and desired temp if set by recipe
 “Alexa, ask Food Computer for water potential hydrogen” | aka pH
 “Alexa, ask Food Computer for water pH level” | Alias for potential hydrogen
-“Alexa, ask Food Computer for measured {parameter}” | Measured is an optional keyword
+“Alexa, ask Food Computer for desired {parameter}” | See below for list of parameters supported
 **Start a recipe**
 "Alexa, ask Food Computer for recipe lettuce" | Will start the recipe called "lettuce"
 "Alexa, ask Food Computer to start recipe" lettuce | alt way of starting recipe "lettuce"
