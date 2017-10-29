@@ -589,7 +589,7 @@ exports.handler = (event, context) => {
  * This uses OpenAg Brain APIs (which are proxied by CouchDB). 
  *
  */
-function _getParameterValue(parameter) {
+function getParameterValue(parameter) {
 
     // Check user request for validity.
     if (!checkIfParamIsValid(parameter)) {
@@ -683,7 +683,7 @@ function _getParameterValue(parameter) {
  * Get a value of a measured parameter and its desired value if set and relevant.
  * This uses CouchDB APIs.
  */
-function getParameterValue(parameter) {
+function _getParameterValue(parameter) {
 
     // Check user request for validity.
     if (!checkIfParamIsValid(parameter)) {
