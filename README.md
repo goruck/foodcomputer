@@ -1,4 +1,4 @@
-*The Food Computer Alexa skill is now in beta test! Please send me an e-mail to be a part of the beta and you'll be able to use the skill to interact with my food computer on your Echo devices. Any feedback is welcome*
+*The Food Computer Alexa skill is now in beta test! Please send me an e-mail to be a part of the beta and you'll be able to use the skill to interact with my food computer on your Echo devices. Any feedback is welcome.*
 
 # Alexa OpenAg Personal Food Computer
 This describes how to use Amazon's Alexa to create a voice user interface to the OpenAg Personal Food Computer (PFC). I was very fortunate to meet the leaders of Fenome and got the opportunity to build my own OpenAg PFC which is now in use at my home. I thought I'd give back to Fenome and the OpenAg community by integrating Amazon's Alexa with the PFC. I find the PFC an amazing device and the OpenAg initiative inspiring! I hope people find the PFC even more useful with Alexa.
@@ -15,14 +15,15 @@ Example User Request | Note
 ---------------------|------------------
 **Get information about the recipe being used**
 "Alexa, ask Food Computer for recipe information" | Returns current recipe name and when started
-**Show graph of a parameter (if Echo device has a display)**
+**Show graph of a parameter (if Echo device has a display)** | Latency may be high - be patient.
 "Alexa, ask Food Computer to graph air carbon dioxide" | Default is to graph over last 24 hours
 "Alexa, ask Food Computer to graph {parameter}" | See below for list of parameters supported
 **Show camera image (if Echo device has a display)**
 "Alexa, ask Food Computer to show top camera" | Displays latest image from aerial camera
 "Alexa, ask Food Computer to show side camera" | Latest image from side camera
 "Alexa, ask Food Computer to show top camera {time} ago" | Top camera image from specified past time
-"Alexa, ask Food Computer to show measurement view" | Shows plant size and number of leaves (uses openag_cv)
+**Show plant size and number of leaves**
+"Alexa, ask Food Computer to show measurement view" | uses openag_cv
 **Get plant health and any issues that need attention**
 "Alexa, ask Food Computer how my plants are" | *in progress*
 **Get Food Computer diagnostics information**
