@@ -44,6 +44,8 @@ var handlers = {
         this.emit(':ask', welcomeOutput, welcomeReprompt);
     },
     'StartRecipe': function () {
+        console.log("StartRecipe event: " + JSON.stringify(this.event));
+
         // Delegate to Alexa for intent and slot confirmations
         var retObj = delegateToAlexa.call(this);
 
@@ -86,6 +88,8 @@ var handlers = {
         getParameterValue.call(this, parameter);
     },
     'GetDiagnosticInfo': function () {
+        console.log("GetDiagnosticInfo event: " + JSON.stringify(this.event));
+
         const method   = "GET",
               path     = "/_openag/api/0.0.1/topic_data/arduino_status",
               postData = "",
@@ -570,6 +574,7 @@ var handlers = {
         });
     },
     'AMAZON.HelpIntent': function () {
+        console.log("Help event: " + JSON.stringify(this.event));
         if (supportsDisplay.call(this) || isSimulator.call(this)) {
             let content = {
                 "hasDisplaySpeechOutput" : welcomeReprompt,
@@ -585,14 +590,17 @@ var handlers = {
         }
     },
     'AMAZON.CancelIntent': function () {
+        console.log("Cancel event: " + JSON.stringify(this.event));
         speechOutput = "goodbye";
         this.emit(':tell', speechOutput);
     },
     'AMAZON.StopIntent': function () {
+        console.log("Stop event: " + JSON.stringify(this.event));
         speechOutput = "goodbye";
         this.emit(':tell', speechOutput);
     },
     'SessionEndedRequest': function () {
+        console.log("Session ended event: " + JSON.stringify(this.event));
         speechOutput = "goodbye";
         this.emit(':tell', speechOutput);
     }
