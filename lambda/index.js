@@ -15,9 +15,23 @@ var Alexa = require('alexa-sdk');
 var APP_ID = "amzn1.ask.skill.cca03904-f750-41cc-a7cf-beb59fc21820";
 var speechOutput = "";
 var welcomeOutput = "Please ask the foodcomputer something.";
-var welcomeReprompt = "You can say the name of a recipe to start,"
-                      +" or ask for the value of a desired or measured parameter,"
-                      +" or ask for diagnostics.";
+var welcomeReprompt = "For example, you can ask for the top or side camera view,"
+                      +" or ask for diagnostics."
+                      +" or ask for the value of a parameter."
+                      +" Valid parameters are"
+                      +' air carbon dioxide,'
+                      +' air humidity,'
+                      +' humidity,'
+                      +' air temperature,'
+                      +' temperature,'
+                      +' light illuminance,'
+                      +' blue light intensity,'
+                      +' red light intensity,'
+                      +' white light intensity,'
+                      +' water electrical conductivity,'
+                      +' water potential hydrogen,'
+                      +' water temperature,'
+                      +' and water level high';
 /*If you don't want to use cards in your skill, set the USE_IMAGES_FLAG to false.
 If you set it to true, you will need an image for each item in your data.*/
 const USE_IMAGES_FLAG = true;
@@ -556,7 +570,19 @@ var handlers = {
         });
     },
     'AMAZON.HelpIntent': function () {
-        this.emit(':ask', welcomeReprompt);
+        if (supportsDisplay.call(this) || isSimulator.call(this)) {
+            let content = {
+                "hasDisplaySpeechOutput" : welcomeReprompt,
+                "title" : "Help Information.",
+                "textContent" : welcomeReprompt,
+                "templateToken" : "SingleItemView",
+                "askOrTell": ":ask",
+                "sessionAttributes" : this.attributes
+            };
+            renderTemplate.call(this, content);
+        } else {
+            this.emit(":ask", welcomeReprompt);
+        }
     },
     'AMAZON.CancelIntent': function () {
         speechOutput = "goodbye";
@@ -567,7 +593,7 @@ var handlers = {
         this.emit(':tell', speechOutput);
     },
     'SessionEndedRequest': function () {
-        speechOutput = "";
+        speechOutput = "goodbye";
         this.emit(':tell', speechOutput);
     }
 };
