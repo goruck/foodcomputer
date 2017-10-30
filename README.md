@@ -1,4 +1,4 @@
-*The Food Computer Alexa skill is now in beta test! Please send me an e-mail to be a part of the beta and you'll be able to use the skill to interact with my food computer on your Echo devices. Any feedback is welcome.*
+*The Food Computer Alexa skill is now in beta test! Please send me an e-mail to be a part of the beta and you'll be able to use the skill to interact with my food computer on your Echo devices. Any feedback is welcome but please be aware this skill and the Personal Food Computer project is still in development.*
 
 ![Alt text](/img/pfc-logo.jpg?raw=true "Image courtesy of OpenAg Forum")
 
