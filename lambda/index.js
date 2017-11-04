@@ -392,15 +392,21 @@ var handlers = {
         const daysToGraph = 1; // Number of days to graph the parameter over. 
         var deltaMs = daysToGraph * 24 * 60 * 60 * 1000; // Days in ms. 
         var pfcStartTime = (n - deltaMs) / 1000; // TODO make a slot
-        //console.log("pfcStartTime: " +pfcStartTime);
+        console.log("pfcStartTime: " +pfcStartTime);
         var pfcEndTime = n / 1000; // TODO make a slot
-        //console.log("pfcEndTime: " +pfcEndTime);
+        console.log("pfcEndTime: " +pfcEndTime);
 
         /*
          * Query food computer database for requested variable data over the time range.
          * Using "stale = update_after", CouchDB will update the view after the stale result is returned.
          * This will speed up queries but results in slighty out of data info returned.
          * See 'https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options'.
+         *
+         * Two methods of querying the database are supported - via JSON and CSV.
+         * The JSON method has more overhead and so the returned file size is bigger but its returned
+         * relatively fast. The CSV method returns a file size that's about 10x smaller but takes
+         * 4 to 5 times longer to generate. The choice between them depends on the Internet bandwidth
+         * available and the execution time of CouchDB which is affected by overall PFC system load. 
          */
         // JSON query - about 4.5 MB for one day's worth of data.
         var queryPathJson = "/environmental_data_point/_design/openag/_view/by_variable?" +
@@ -416,7 +422,7 @@ var handlers = {
                            "\&cols=[%22timestamp%22,%22value%22]";
 
         console.time("httpsReq");
-        httpsReq("GET", queryPathCsv, "", true, (err, result) => {
+        httpsReq("GET", queryPathJson, "", true, (err, result) => {
             console.timeEnd("httpsReq");
             if (err) {
                 console.log("ERROR ShowGraph: httpsReq: " + err);
@@ -425,8 +431,8 @@ var handlers = {
                 return;
             }
 
-            var figure = mkPlotlyFigFromCsv(result, parameter, "time", getParamUnits(pfcParam));
-            //var figure = mkPlotlyFigFromJson(result, parameter, "time", getParamUnits(pfcParam);
+            //var figure = mkPlotlyFigFromCsv(result, parameter, "time", getParamUnits(pfcParam));
+            var figure = mkPlotlyFigFromJson(result, parameter, "time", getParamUnits(pfcParam));
             const imgOpts = {
                   format: "png",
                   width: 1024,
