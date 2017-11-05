@@ -8,13 +8,13 @@ This Alexa skill is in beta test. If you want to try it out right now you can ei
 # Requirements and System Architecture
 I had the following goals for this project which lead to certain requirements.
 
-1. Learn about the OpenAg initiative and and how might people benefit from this technology.
-2. Learn how to develop an Alexa skill for Echo devices with a display and in particular skills for the Internet of Things. This lead to the requirement to use an external plot creation service (plot.ly), for example. Note that I did consider using the AWS IoT service for this project but decided against it since the PFC is a relatively complex device and in particular has an integrated database. 
-3. Learn how to integrate a voice UI with the PFC that gave a great user experience. This required me to not only think through the user interaction but also help fix stability bugs in the OpenAg Brain software and to further develop its API to facilitate the integration with Alexa. I also had to pay attention how fast Alexa responded to requests with five seconds or less as the requirement. This drove some decisions such as how to access the PFC's CouchDB database, in particular the use of stale views. Latency optimization is a work in progress. 
-4. Learn about ROS which is extensively used in the OpenAg Brain project.
-5. Create an end-to-end framework for Alexa Skills development that can be used for other similar IoT applications. This lead to the requirement to use standard services and components where possible and provide clear documentation. 
-6. Ensure that the end-to-end service is secure. This required me to enable HTTPS on CouchDB and in the JavaScript code that handles the Alexa intent.
-7. Learn about how computer vision can be used in growing plants optimally. This lead to the use of OpenAg CV and the integration of it with OpenAg Brain. 
+1. **Learn about the OpenAg initiative and and how might people benefit from this technology.**
+2. **Learn how to develop an Alexa skill for Echo devices with a display and in particular skills for the Internet of Things.** This lead to the requirement to use an external plot creation service (plot.ly), for example. Note that I did consider using the AWS IoT service for this project but decided against it since the PFC is a relatively complex device and in particular has an integrated database. 
+3. **Learn how to integrate a voice UI with the PFC that gave a great user experience.** This required me to not only think through the user interaction but also help fix stability bugs in the OpenAg Brain software and to further develop its API to facilitate the integration with Alexa. I also had to pay attention how fast Alexa responded to requests with five seconds or less as the requirement. This drove some decisions such as how to access the PFC's CouchDB database, in particular the use of stale views. Latency optimization is a work in progress. 
+4. **Learn about ROS which is extensively used in the OpenAg Brain project.**
+5. **Create an end-to-end framework for Alexa Skills development that can be used for other similar IoT applications.** This lead to the requirement to use standard services and components where possible and provide clear documentation. 
+6. **Ensure that the end-to-end service is secure.** This required me to enable HTTPS on CouchDB and in the JavaScript code that handles the Alexa intent.
+7. **Learn about how computer vision can be used in growing plants optimally.** This lead to the use of OpenAg CV and the integration of it with OpenAg Brain. 
 
 These goals and requirements eventual lead to the following system architecture.
 
@@ -92,7 +92,7 @@ I've made modifications to the openag_brain source to facilitate integration wit
 I'm using openag_cv for CV development. I've also made modifications to the openag_cv source to get it to work with an integrated openag_brain configuration, so you need to use my [fork](https://github.com/goruck/openag_cv) of openag_cv.
 
 # Plotly
-I'm using the fantastic plotting service called [Plotly](https://plot.ly/) to generate plots from the PFC's database upon a user request to Alexa. I needed to setup a free Plotly account to use it. The lambda code sends the PFC data to the Plotly service which returns a png image. The latency of the service tends to be a second or two but I've seen it as long as five seconds. Although this is not the bottleneck to show a PFC variable plot to the user it can be optimized by running the Plotly code in the lambda instance. This would required it to be compiled as a node package and uploaded with the rest of my handler code to lambda. 
+I'm using a fantastic plotting service called [Plotly](https://plot.ly/) to generate plots from the PFC's database upon a user request to Alexa. I needed to setup a free Plotly account to use it. The lambda code sends the PFC data to the Plotly service which returns a png image. The latency of the service tends to be a second or two but I've seen it as long as five seconds. Although this is not the bottleneck to show a PFC variable plot to the user it can be optimized by running the Plotly code in the lambda instance. This would required it to be compiled as a node package and uploaded with the rest of my handler code to lambda. 
 
 # Licensing
 Everything here is licensed under the [MIT license](https://choosealicense.com/licenses/mit/).
