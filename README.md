@@ -1,7 +1,7 @@
 *The Food Computer Alexa skill is now in beta test! Please send me an e-mail to be a part of the beta and you'll be able to use the skill to interact with my food computer on your Echo devices. Any feedback is welcome but please be aware this skill and the Personal Food Computer project are still in development.*
 
 # Alexa OpenAg Personal Food Computer
-This describes how to use Amazon's Alexa to create a voice user interface to the OpenAg Personal Food Computer (PFC). I was very fortunate to have the opportunity to build my own OpenAg PFC which is now in use at my home. I thought I'd give back the OpenAg community by integrating Amazon's Alexa with the PFC. I find the PFC an amazing device and the OpenAg initiative inspiring! I hope people find the PFC even more useful with Alexa.
+This describes how to use Amazon's Alexa to create a voice user interface to the [OpenAg Personal Food Computer (PFC)](https://www.media.mit.edu/groups/open-agriculture-openag/overview/). I was very fortunate to have the opportunity to build my own OpenAg PFC which is now in use at my home. I thought I'd give back the OpenAg community by integrating Amazon's Alexa with the PFC. I find the PFC an amazing device and the OpenAg initiative inspiring! I hope people find the PFC even more useful with Alexa.
 
 This Alexa skill is in beta test. If you want to try it out right now you can be included in my beta test and interact with my PFC via my skill on your own Echo device. Or fork my code and run it as your own skill if you have your own PFC.
 
