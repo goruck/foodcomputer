@@ -72,7 +72,7 @@ Spoken Parameter | Food Computer Database Parameter
 # Requirements and System Architecture
 Here's a view of the overall system block diagram of how Alexa works with the PFC.
 
-![Alt text](/img/pfc-blk-dia.png?raw=true "This is based on Gordon Brander's architecture diagram.")
+![Alt text](/img/pfc-blk-dia.jpg?raw=true "This is based on Gordon Brander's architecture diagram.")
 
 # Personal Food Computer Preparation
 
