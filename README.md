@@ -1,17 +1,16 @@
 *The Food Computer Alexa skill is now in beta test! Please send me an e-mail to be a part of the beta and you'll be able to use the skill to interact with my food computer on your Echo devices. Any feedback is welcome but please be aware this skill and the Personal Food Computer project are still in development.*
 
-![Alt text](/img/pfc-logo.jpg?raw=true "Image courtesy of OpenAg Forum")
-
 # Alexa OpenAg Personal Food Computer
 This describes how to use Amazon's Alexa to create a voice user interface to the OpenAg Personal Food Computer (PFC). I was very fortunate to meet the leaders of Fenome and got the opportunity to build my own OpenAg PFC which is now in use at my home. I thought I'd give back to Fenome and the OpenAg community by integrating Amazon's Alexa with the PFC. I find the PFC an amazing device and the OpenAg initiative inspiring! I hope people find the PFC even more useful with Alexa.
 
 This Alexa skill is in beta test. If you want to try it out right now you can either be included in my beta test and interact with my PFC via my skill on your own Echo device or fork my code and run it as your own skill if you have your own PFC.
 
-To write your own version of this skill you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application.
+# Requirements and System Architecture
+Here's a view of the overall system block diagram of how Alexa works with the PFC.
 
-The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. I've made modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my "cv" [fork](https://github.com/goruck/openag_brain/tree/cv) of openag_brain. I've also made modifications to the openag_cv source to get it to work with an integrated openag_brain configuration, so you need to use my [fork](https://github.com/goruck/openag_cv) of openag_cv as well.
+![Alt text](/img/pfc-blk-dia.jpg?raw=true "This is based on Gordon Brander's architecture diagram.")
 
-Here are some examples of what you can do.
+# Usage
 
 Example User Request | Note
 ---------------------|------------------
@@ -69,12 +68,24 @@ Spoken Parameter | Food Computer Database Parameter
 "water temperature" | "water_temperature"
 "water level high" | "water_level_high"
 
-# Requirements and System Architecture
-Here's a view of the overall system block diagram of how Alexa works with the PFC.
+# Alexa Skill Development
+The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. I've made modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my "cv" [fork](https://github.com/goruck/openag_brain/tree/cv) of openag_brain. I've also made modifications to the openag_cv source to get it to work with an integrated openag_brain configuration, so you need to use my [fork](https://github.com/goruck/openag_cv) of openag_cv as well.
 
-![Alt text](/img/pfc-blk-dia.jpg?raw=true "This is based on Gordon Brander's architecture diagram.")
+To write your own version of this skill you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application.
 
-# Personal Food Computer Preparation
+# Computer Vision Development
+*coming soon*
+
+# Development and Test Environment
+*coming soon*
+
+# Licensing
+Everything here is licensed under the [MIT license](https://choosealicense.com/licenses/mit/).
+
+# Contact Information
+For questions or comments about this project please contact the author goruck (Lindo St. Angel) at {lindostangel} AT {gmail} DOT {com}.
+
+# Appendix
 
 ## Installing OpenAg_Brain (openag_brain) on the Food Computer's Raspberry Pi
 1. Download [Raspbian Jessie Lite](https://www.raspberrypi.org/downloads/raspbian/).
@@ -129,7 +140,7 @@ $ ./scripts/firmware -t upload
 $ rosrun openag_brain main personal_food_computer_v2.launch
 ```
 
-## Install the OpenAg User Interface (openag_ui) on the Food Computer's Raspberry Pi
+## Installing the OpenAg User Interface (openag_ui) on the Food Computer's Raspberry Pi
 1. [Install NodeJs and NPM for openag_ui](https://tecadmin.net/install-latest-nodejs-npm-on-debian/):
 ```bash
 $ sudo apt-get install curl python-software-properties
@@ -149,7 +160,7 @@ $ npm run couchapp_deploy --app_db_url="http://localhost:5984/app"
 4. Test that the UI works Ok:
 Open your browser to http://localhost:5984/app/_design/app/_rewrite.
 
-## Install OpenAg Computer Vision (openag_cv) on the Food Computer's Raspberry Pi
+## Installing OpenAg Computer Vision (openag_cv) on the Food Computer's Raspberry Pi
 Clone my fork of openag_brain source code:
 ```bash
 git clone https://github.com/goruck/openag_cv.git ~/catkin_ws/src/openag_cv
@@ -277,24 +288,3 @@ $ curl --cacert ca.crt --key client.key --cert client.crt https://external-ip-ad
 5. https://github.com/OpenAgInitiative/openag_brain/pull/294
 6. https://github.com/OpenAgInitiative/openag_brain/pull/262
 7. https://github.com/OpenAgInitiative/openag_brain/pull/339
-
-# Alexa Skills Development
-*coming soon*
-
-# AWS Lamba Function Development
-*coming soon*
-
-# Computer Vision Development
-*coming soon*
-
-# Development and Test Environment
-*coming soon*
-
-# Licensing
-Everything here is licensed under the [MIT license](https://choosealicense.com/licenses/mit/).
-
-# Contact Information
-For questions or comments about this project please contact the author goruck (Lindo St. Angel) at {lindostangel} AT {gmail} DOT {com}.
-
-# Appendix
-*coming soon*
