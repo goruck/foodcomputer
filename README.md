@@ -1,12 +1,16 @@
 *The Food Computer Alexa skill is now in beta test! Please send me an e-mail to be a part of the beta and you'll be able to use the skill to interact with my food computer on your Echo devices. Any feedback is welcome but please be aware this skill and the Personal Food Computer project are still in development.*
 
 # Alexa OpenAg Personal Food Computer
-This describes how to use Amazon's Alexa to create a voice user interface to the OpenAg Personal Food Computer (PFC). I was very fortunate to meet the leaders of Fenome and got the opportunity to build my own OpenAg PFC which is now in use at my home. I thought I'd give back to Fenome and the OpenAg community by integrating Amazon's Alexa with the PFC. I find the PFC an amazing device and the OpenAg initiative inspiring! I hope people find the PFC even more useful with Alexa.
+This describes how to use Amazon's Alexa to create a voice user interface to the OpenAg Personal Food Computer (PFC). I was very fortunate to have the opportunity to build my own OpenAg PFC which is now in use at my home. I thought I'd give back the OpenAg community by integrating Amazon's Alexa with the PFC. I find the PFC an amazing device and the OpenAg initiative inspiring! I hope people find the PFC even more useful with Alexa.
 
-This Alexa skill is in beta test. If you want to try it out right now you can either be included in my beta test and interact with my PFC via my skill on your own Echo device or fork my code and run it as your own skill if you have your own PFC.
+This Alexa skill is in beta test. If you want to try it out right now you can be included in my beta test and interact with my PFC via my skill on your own Echo device. Or fork my code and run it as your own skill if you have your own PFC.
 
 # Requirements and System Architecture
-I had the following goals for this project which lead to certain requirements.
+The figure below shows the Alexa OpenAg Personal Food Computer's system architecture.
+
+![Alt text](/img/pfc-blk-dia.jpg?raw=true "Based on Gordon Brander's architecture diagram.")
+
+This architecture meets the goals and requirements that I had for the project which are listed below. 
 
 1. **Learn about the OpenAg initiative and and how might people benefit from this technology.**
 2. **Learn how to develop an Alexa skill for Echo devices with a display and in particular skills for the Internet of Things.** This lead to the requirement to use an external plot creation service (plot.ly), for example. Note that I did consider using the AWS IoT service for this project but decided against it since the PFC is a relatively complex device and in particular has an integrated database. 
@@ -16,11 +20,8 @@ I had the following goals for this project which lead to certain requirements.
 6. **Ensure that the end-to-end service is secure.** This required me to enable HTTPS on CouchDB and in the JavaScript code that handles the Alexa intent.
 7. **Learn about how computer vision can be used in growing plants optimally.** This lead to the use of OpenAg CV and the integration of it with OpenAg Brain. 
 
-These goals and requirements eventual lead to the following system architecture.
-
-![Alt text](/img/pfc-blk-dia.jpg?raw=true "Based on Gordon Brander's architecture diagram.")
-
-# Usage
+# Alexa User Interaction
+The examples below show how a user can interact with the PFC via Alexa on an Echo device (with or without a screen). 
 
 Example User Request | Note
 ---------------------|------------------
