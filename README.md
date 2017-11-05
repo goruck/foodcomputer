@@ -6,9 +6,19 @@ This describes how to use Amazon's Alexa to create a voice user interface to the
 This Alexa skill is in beta test. If you want to try it out right now you can either be included in my beta test and interact with my PFC via my skill on your own Echo device or fork my code and run it as your own skill if you have your own PFC.
 
 # Requirements and System Architecture
-Here's a view of the overall system block diagram of how Alexa works with the PFC.
+I had the following goals for this project which lead to certain requirements.
 
-![Alt text](/img/pfc-blk-dia.jpg?raw=true "This is based on Gordon Brander's architecture diagram.")
+1. Learn about the OpenAg initiative and and how might people benefit from this technology.
+2. Learn how to develop an Alexa skill for Echo devices with a display and in particular skills for the Internet of Things. This lead to the requirement to use an external plot creation service (plot.ly), for example. Note that I did consider using the AWS IoT service for this project but decided against it since the PFC is a relatively complex device and in particular has an integrated database. 
+3. Learn how to integrate a voice UI with the PFC that gave a great user experience. This required me to not only think through the user interaction but also help fix stability bugs in the OpenAg Brain software and to further develop its API to facilitate the integration with Alexa.
+4. Learn about ROS which is extensively used in the OpenAg Brain project.
+5. Create an end-to-end framework for Alexa Skills development that can be used for other similar IoT applications. This lead to the requirement to use standard services and components where possible and provide clear documentation. 
+6. Ensure that the end-to-end service is secure. This required me to enable HTTPS on CouchDB and in the JavaScript code that handles the Alexa intent.
+7. Learn about how computer vision can be used in growing plants optimally. This lead to the use of OpenAg CV and the integration of it with OpenAg Brain. 
+
+These goals and requirements eventual lead to the following system architecture.
+
+![Alt text](/img/pfc-blk-dia.jpg?raw=true "Based on Gordon Brander's architecture diagram.")
 
 # Usage
 
@@ -69,15 +79,15 @@ Spoken Parameter | Food Computer Database Parameter
 "water level high" | "water_level_high"
 
 # Alexa Skill Development
-The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the node.js code in the lambda directory will need to run in your own lambda instance. I've made modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my "cv" [fork](https://github.com/goruck/openag_brain/tree/cv) of openag_brain. I've also made modifications to the openag_cv source to get it to work with an integrated openag_brain configuration, so you need to use my [fork](https://github.com/goruck/openag_cv) of openag_cv as well.
+The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the JavaScript in the lambda directory will need to run in your own lambda instance (using node.js as the runtime) as it serves as the intent handler for the skill.
 
 To write your own version of this skill you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application.
 
-# Computer Vision Development
-*coming soon*
+# OpenAg Brain Development
+I've made modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my "cv" [fork](https://github.com/goruck/openag_brain/tree/cv) of openag_brain.
 
-# Development and Test Environment
-*coming soon*
+# Computer Vision Development
+I'm using openag_cv for CV development. I've also made modifications to the openag_cv source to get it to work with an integrated openag_brain configuration, so you need to use my [fork](https://github.com/goruck/openag_cv) of openag_cv.
 
 # Licensing
 Everything here is licensed under the [MIT license](https://choosealicense.com/licenses/mit/).
