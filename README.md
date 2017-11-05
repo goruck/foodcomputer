@@ -7,12 +7,8 @@ I was very fortunate to have the opportunity to build my own OpenAg PFC which is
 
 If you want to try this Alexa skill out right now you can be included in my beta test and interact with my PFC via my skill on your own Echo device. Or fork my code and run it as your own skill if you have your own PFC.
 
-# Requirements and System Architecture
-The figure below shows the Alexa OpenAg Personal Food Computer's system architecture.
-
-![Alt text](/img/pfc-blk-dia.jpg?raw=true "Based on Gordon Brander's architecture diagram.")
-
-This architecture meets the goals and requirements that I had for the project which are listed below. 
+# Project Requirements
+My high level goals and associated requirements for this project are shown below.
 
 1. **Learn about the OpenAg initiative and and how might people benefit from this technology.**
 2. **Learn how to develop an Alexa skill for Echo devices with a display and in particular skills for the Internet of Things.** This lead to the requirement to use an external plot creation service (plot.ly), for example. Note that I did consider using the AWS IoT service for this project but decided against it since the PFC is a relatively complex device and in particular has an integrated database. 
@@ -20,9 +16,35 @@ This architecture meets the goals and requirements that I had for the project wh
 4. **Learn about ROS which is extensively used in the OpenAg Brain project.**
 5. **Create an end-to-end framework for Alexa Skills development that can be used for other similar IoT applications.** This lead to the requirement to use standard services and components where possible and provide clear documentation. 
 6. **Ensure that the end-to-end service is secure.** This required me to enable HTTPS on CouchDB and in the JavaScript code that handles the Alexa intent.
-7. **Learn about how computer vision can be used in growing plants optimally.** This lead to the use of OpenAg CV and the integration of it with OpenAg Brain. 
+7. **Learn about how computer vision can be used in growing plants optimally.** This lead to the use of OpenAg CV and the integration of it with OpenAg Brain.
 
-# Alexa User Interaction
+# System Architecture
+The figure below shows the Alexa OpenAg Personal Food Computer's system architecture.
+
+![Alt text](/img/pfc-blk-dia.jpg?raw=true "Based on Gordon Brander's architecture diagram.")
+
+# Alexa Skills, AWS Lambda and S3
+The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the JavaScript in the lambda directory will need to run in your own lambda instance (using node.js as the runtime) as it serves as the intent handler for the skill.
+
+To write your own version of this skill you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application.
+
+I'm using AWS S3 to temporary store images from the PFC's cameras and the plots of PFC variable data over time from Plotly service. This is required since the Alexa service needs a URL to an image to be displayed. I needed to setup a S3 bucket for this purpose and give the lambda service permission to access it, see [this](http://docs.aws.amazon.com/lambda/latest/dg/with-s3.html) for how to do that. 
+
+# OpenAg Brain
+I've made modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my "cv" [fork](https://github.com/goruck/openag_brain/tree/cv) of openag_brain. See the appendix for the steps required to install OpenAg Brain. 
+
+# OpenAg Computer Vision
+I'm using openag_cv for CV development. I've also made modifications to the openag_cv source to get it to work with an integrated openag_brain configuration, so you need to use my [fork](https://github.com/goruck/openag_cv) of openag_cv. See the appendix for the steps required to install OpenAg CV. 
+
+# CouchDB
+The PFC uses Apache CouchDB which is open source database software. It has a document-oriented NoSQL database architecture and is implemented in the concurrency-oriented language Erlang; it uses JSON to store data, JavaScript as its query language using MapReduce, and HTTP for an API.
+
+The Alexa skill's code runs in an AWS Lambda instance which communicates with the PFC over the Internet via CouchDB REST APIs and openag_brain REST APIs proxied by CouchDB. For security purposes, these APIs need to be authenticated and encrypted via TLS/SSL and the CouchDB "admin party" needs to be ended. See the appendix for the steps I took to secure CouchDB.
+
+# Plotly
+I'm using a fantastic plotting service called [Plotly](https://plot.ly/) to generate plots from the PFC's database upon a user request to Alexa. I needed to setup a free Plotly account to use it. The lambda code sends the PFC data to the Plotly service which returns a png image. The latency of the service tends to be a second or two but I've seen it as long as five seconds. Although this is not the bottleneck to show a PFC variable plot to the user it can be optimized by running the Plotly code in the lambda instance. This would required it to be compiled as a node package and uploaded with the rest of my handler code to lambda.
+
+# Alexa User Interaction Examples
 The examples below show how a user can interact with the PFC via Alexa on an Echo device (with or without a screen). 
 
 Example User Request | Note
@@ -80,22 +102,6 @@ Spoken Parameter | Food Computer Database Parameter
 "water ph" | "water_potential_hydrogen"
 "water temperature" | "water_temperature"
 "water level high" | "water_level_high"
-
-# Alexa Skills, AWS Lambda and S3
-The JSON in this repo's ask directory can be used in your dev account to create the Alexa skill and the JavaScript in the lambda directory will need to run in your own lambda instance (using node.js as the runtime) as it serves as the intent handler for the skill.
-
-To write your own version of this skill you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application.
-
-I'm using AWS S3 to temporary store images from the PFC's cameras and the plots of PFC variable data over time from Plotly service. This is required since the Alexa service needs a URL to an image to be displayed. I needed to setup a S3 bucket for this purpose and give the lambda service permission to access it, see [this](http://docs.aws.amazon.com/lambda/latest/dg/with-s3.html) for how to do that. 
-
-# OpenAg Brain
-I've made modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my "cv" [fork](https://github.com/goruck/openag_brain/tree/cv) of openag_brain.
-
-# Computer Vision
-I'm using openag_cv for CV development. I've also made modifications to the openag_cv source to get it to work with an integrated openag_brain configuration, so you need to use my [fork](https://github.com/goruck/openag_cv) of openag_cv.
-
-# Plotly
-I'm using a fantastic plotting service called [Plotly](https://plot.ly/) to generate plots from the PFC's database upon a user request to Alexa. I needed to setup a free Plotly account to use it. The lambda code sends the PFC data to the Plotly service which returns a png image. The latency of the service tends to be a second or two but I've seen it as long as five seconds. Although this is not the bottleneck to show a PFC variable plot to the user it can be optimized by running the Plotly code in the lambda instance. This would required it to be compiled as a node package and uploaded with the rest of my handler code to lambda. 
 
 # Licensing
 Everything here is licensed under the [MIT license](https://choosealicense.com/licenses/mit/).
