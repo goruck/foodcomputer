@@ -28,7 +28,7 @@ The JSON in this repo's ask directory can be used in your dev account to create 
 
 To write your own version of this skill you need to set up an Amazon applications developer account and an Amazon Web Services account. See this excellent [tutorial](https://github.com/alexa/alexa-cookbook/tree/master/handling-responses/dialog-directive-delegate#title) for an example of how to do this and get started writing Alexa skills. I used the [Alexa Skills Kit SDK for Node.js](https://www.npmjs.com/package/alexa-sdk) to develop this application.
 
-I'm using AWS S3 to temporary store images from the PFC's cameras and the plots of PFC variable data over time from Plotly service. This is required since the Alexa service needs a URL to an image to be displayed. I needed to setup a S3 bucket for this purpose and give the lambda service permission to access it, see [this](http://docs.aws.amazon.com/lambda/latest/dg/with-s3.html) for how to do that. 
+I'm using AWS S3 to temporarly store images from the PFC's cameras and the plots of PFC variable data over time from Plotly service. This is required since the Alexa service needs a URL to an image to be displayed. I needed to setup a S3 bucket for this purpose and give the lambda service permission to access it, see [this](http://docs.aws.amazon.com/lambda/latest/dg/with-s3.html) for how to do that. 
 
 # OpenAg Brain
 I've made modifications to the openag_brain source to facilitate integration with Alexa and although some of these changes have been integrated into the official openag_brain repo, to get the latest you should use my "cv" [fork](https://github.com/goruck/openag_brain/tree/cv) of openag_brain. See the appendix for the steps required to install OpenAg Brain. 
@@ -41,8 +41,12 @@ The PFC uses Apache CouchDB which is open source database software. It has a doc
 
 The Alexa skill's code runs in an AWS Lambda instance which communicates with the PFC over the Internet via CouchDB REST APIs and openag_brain REST APIs proxied by CouchDB. For security purposes, these APIs need to be authenticated and encrypted via TLS/SSL and the CouchDB "admin party" needs to be ended. See the appendix for the steps I took to secure CouchDB.
 
+Two methods of querying the database are supported - via JSON and CSV. The JSON method has more overhead and so the returned file size is bigger but is returned relatively fast. The CSV method returns a file size that's about 10x smaller but takes 4 to 5 times longer to generate. The choice between them depends on the Internet bandwidth available and the execution time of CouchDB which is affected by overall PFC system load. See the intent handlers in the lambda code directory for examples of how the JSON and CSV methods are implemented over https.
+
+Database queries are used with the "stale = update_after" directive which causes CouchDB to update the view after a stale result is returned. This will speed up queries but results in slightly out of data info returned. See [this](https://wiki.apache.org/couchdb/HTTP_view_API#Querying_Options) for more information.
+
 # Plotly
-I'm using a fantastic plotting service called [Plotly](https://plot.ly/) to generate plots from the PFC's database upon a user request to Alexa. I needed to setup a free Plotly account to use it. The lambda code sends the PFC data to the Plotly service which returns a png image. The latency of the service tends to be a second or two but I've seen it as long as five seconds. Although this is not the bottleneck to show a PFC variable plot to the user it can be optimized by running the Plotly code in the lambda instance. This would required it to be compiled as a node package and uploaded with the rest of my handler code to lambda.
+I'm using a fantastic plotting service called [Plotly](https://plot.ly/) to generate plots from the PFC's database information upon a user request to Alexa. I needed to setup a free Plotly account to use it. The lambda code sends the PFC data to the Plotly service which returns a png image. The latency of the service tends to be a second or two but I've seen it as long as five seconds. Although this is not the bottleneck to show a PFC variable plot to the user it can be optimized by running the Plotly code in the lambda instance. This would required it to be compiled as a node package and uploaded with the rest of my handler code to lambda.
 
 # Alexa User Interaction Examples
 The examples below show how a user can interact with the PFC via Alexa on an Echo device (with or without a screen). 
