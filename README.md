@@ -57,6 +57,7 @@ Example User Request | Note
 "Alexa, ask Food Computer for recipe information" | Returns current recipe name and when started
 **Show graph of a parameter (if Echo device has a display)** | Latency may be high - be patient.
 "Alexa, ask Food Computer to graph air carbon dioxide" | Default is to graph over last 24 hours
+![Alt text](/img/pfc-grapf-co2.png?raw=true "") |
 "Alexa, ask Food Computer to graph {parameter}" | See below for list of parameters supported
 **Show camera image (if Echo device has a display)**
 "Alexa, ask Food Computer to show top camera" | Displays latest image from aerial camera
