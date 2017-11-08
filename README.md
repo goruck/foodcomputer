@@ -77,6 +77,7 @@ Example User Request | Note
 **Get the value of a measured parameter (and desired parameter if set)**
 “Alexa, ask Food Computer for air carbon dioxide” | Returns measured air CO2 in ppm
 “Alexa, ask Food Computer for air temperature” | Returns measured air temp and desired temp if set by recipe
+![Alt text](/img/param-value-example.png?raw=true "Example with a desired value set") | Note: example with a desired value set
 “Alexa, ask Food Computer for water potential hydrogen” | aka pH
 “Alexa, ask Food Computer for water pH level” | Alias for potential hydrogen
 “Alexa, ask Food Computer for desired {parameter}” | See below for list of parameters supported
