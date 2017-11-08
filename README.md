@@ -55,6 +55,7 @@ Example User Request | Note
 ---------------------|------------------
 **Get information about the recipe being used**
 "Alexa, ask Food Computer for recipe information" | Returns current recipe name and when started
+![Alt text](/img/recipe-info-example.png?raw=true "") |
 **Show graph of a parameter (if Echo device has a display)** | Latency may be high - be patient.
 "Alexa, ask Food Computer to graph air carbon dioxide" | Default is to graph over last 24 hours
 ![Alt text](/img/pfc-graph-co2.png?raw=true "") |
