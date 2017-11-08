@@ -65,6 +65,7 @@ Example User Request | Note
 "Alexa, ask Food Computer to show top camera {time} ago" | Top camera image from specified past time
 **Show plant size and number of leaves**
 "Alexa, ask Food Computer to show measurement view" | uses openag_cv
+![Alt text](/img/measure-view-example.png?raw=true "measurements still need work.") | Note: measurements still need work
 **Get plant health and any issues that need attention**
 "Alexa, ask Food Computer how my plants are" | *in progress*
 **Get Food Computer diagnostics information**
