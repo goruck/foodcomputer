@@ -60,6 +60,7 @@ Example User Request | Note
 "Alexa, ask Food Computer to graph {parameter}" | See below for list of parameters supported
 **Show camera image (if Echo device has a display)**
 "Alexa, ask Food Computer to show top camera" | Displays latest image from aerial camera
+![Alt text](/img/top-view-example.png?raw=true "These plants are at the end of the cycle.") | Note: plants at end of cycle
 "Alexa, ask Food Computer to show side camera" | Latest image from side camera
 "Alexa, ask Food Computer to show top camera {time} ago" | Top camera image from specified past time
 **Show plant size and number of leaves**
