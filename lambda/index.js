@@ -936,9 +936,22 @@ function checkIfParamIsValid(parameter) {
  *
  */
 var httpsReq = (method, path, postData, text, callback) => {
-    var PORT = fs.readFileSync('./port.txt').toString().replace(/\n$/, ''), // Ignore last newline character
-        HOST = fs.readFileSync('./host.txt').toString().replace(/\n$/, ''),
-        CERT = fs.readFileSync('./certs/client.crt'),
+    // If environment variables for host and port exist then override defaults
+    var HOST = "";
+    if (process.env.host) {
+        HOST = process.env.host;
+    } else {
+        HOST = fs.readFileSync('./host.txt').toString().replace(/\n$/, ''); // Ignore last newline character
+    }
+
+    var PORT = "";
+    if (process.env.port) {
+        PORT = process.env.port;
+    } else {
+        PORT = fs.readFileSync('./port.txt').toString().replace(/\n$/, '');
+    }
+
+    var CERT = fs.readFileSync('./certs/client.crt'),
         KEY  = fs.readFileSync('./certs/client.key'),
         CA   = fs.readFileSync('./certs/ca.crt');
 
@@ -951,7 +964,8 @@ var httpsReq = (method, path, postData, text, callback) => {
         port: PORT,
         path: path,
         method: method,
-        rejectUnauthorized: true,
+        //rejectUnauthorized: true,
+        rejectUnauthorized: false,
         key: KEY,
         cert: CERT,
         ca: CA,
