@@ -7,6 +7,27 @@ I was very fortunate to have the opportunity to build my own OpenAg PFC which is
 
 If you want to try this Alexa skill out right now you can be included in my beta test and interact with my PFC via my skill on your own Echo device. Or fork my code and run it as your own skill if you have your own PFC.
 
+# Table of Contents
+1. [Project Requirements](https://github.com/goruck/foodcomputer#project-requirements)
+2. [System Architecture](https://github.com/goruck/foodcomputer#system-architecture)
+3. [Alexa Skills, AWS Lambda and S3](https://github.com/goruck/foodcomputer#alexa-skills-aws-lambda-and-s3)
+4. [OpenAg Brain](https://github.com/goruck/foodcomputer#openag-brain)
+5. [OpenAg Computer Vision](https://github.com/goruck/foodcomputer#openag-computer-vision)
+6. [CouchDB](https://github.com/goruck/foodcomputer#couchdb)
+7. [Plotly](https://github.com/goruck/foodcomputer#plotly)
+8. [Alexa User Interaction Examples](https://github.com/goruck/foodcomputer#alexa-user-interaction-examples)
+9. [Licensing](https://github.com/goruck/foodcomputer#licensing)
+10. [Contact Information](https://github.com/goruck/foodcomputer#contact-information)
+11. [Appendix](https://github.com/goruck/foodcomputer#appendix)
+  * [Installing OpenAg_Brain (openag_brain) on the Food Computer's Raspberry Pi](https://github.com/goruck/foodcomputer#installing-openag_brain-openag_brain-on-the-food-computers-raspberry-pi)
+  * [Installing the OpenAg User Interface (openag_ui) on the Food Computer's Raspberry Pi](https://github.com/goruck/foodcomputer#installing-the-openag-user-interface-openag_ui-on-the-food-computers-raspberry-pi)
+  * [Installing OpenAg Computer Vision (openag_cv) on the Food Computer's Raspberry Pi](https://github.com/goruck/foodcomputer#installing-openag-computer-vision-openag_cv-on-the-food-computers-raspberry-pi)
+  * [Misc OpenAg-related Setup and Configuration](https://github.com/goruck/foodcomputer#misc-openag-related-setup-and-configuration)
+  * [Securing the PFC](https://github.com/goruck/foodcomputer#securing-the-pfc)
+  * [Operating the PFC behind a firewall](https://github.com/goruck/foodcomputer#operating-the-pfc-behind-a-firewall)
+  * [Modifications done to Openag_Brain for integration with Alexa](https://github.com/goruck/foodcomputer#list-of-modifications-done-to-openag_brain-for-integration-with-alexa-including-stablity-fixes)
+
+
 # Project Requirements
 My high level goals and associated requirements for this project are shown below.
 
@@ -324,9 +345,9 @@ Operating the PFC with Alexa behind a firewall may be impossible if you can't op
 
 3. Set the PFC SSH parameters *ServerAliveInterval* and *ServerAliveCountMax* with non-default values to avoid SSH timeouts. See [this](https://unix.stackexchange.com/questions/3026/what-options-serveraliveinterval-and-clientaliveinterval-in-sshd-config-exac) for details. I use ServerAliveInterval = 30 and ServerAliveCountMax = 6. 
 
-4. Launch an EC2 instance in the VPC's Public Subnet, configure it for tunneling, and start a SSH forwarding session on the PFC. See [these bash scripts](https://gist.github.com/goruck/89231f9d8a73f84245a713216c9b765a) for the associated AWS CLI commands.
+4. Launch an EC2 instance in the VPC's Public Subnet, configure it for tunneling, and start a SSH forwarding session on the PFC. See [these bash scripts](https://gist.github.com/goruck/89231f9d8a73f84245a713216c9b765a) for the associated AWS CLI commands. Note that the EC2 instance needs to use the same security group as the Lambda function (see Step 2 above). 
 
-## List of Modifications done to Openag_Brain for integration with Alexa (including stablity fixes)
+## List of Modifications done to Openag_Brain for integration with Alexa (including stability fixes)
 
 1. https://github.com/OpenAgInitiative/openag_brain/pull/336
 2. https://github.com/OpenAgInitiative/openag_brain/pull/335
