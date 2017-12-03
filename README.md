@@ -199,7 +199,7 @@ Clone my fork of openag_brain source code:
 git clone https://github.com/goruck/openag_cv.git ~/catkin_ws/src/openag_cv
 ```
 
-## Misc Setup and Configuration
+## Misc OpenAg-related Setup and Configuration
 1. [Setup wifi on the Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/wireless/wireless-cli.md) (optional).
 
 2. Modify rsyslog configuration file to prevent rsyslog messages flooding the logs which may eventually cause a system wide crash. See [this](https://www.raspberrypi.org/forums/viewtopic.php?f=91&t=122601) for details. You may have this problem if the Raspberry Pi occasionally crashes and the only way to recover is power cycling it. Also you may see messages like the following in /var/log/messages:
@@ -311,6 +311,20 @@ $ sudo service couchdb start
 $ curl --cacert ca.crt --key client.key --cert client.crt https://external-ip-addr:external-port-num/
 {"couchdb":"Welcome","uuid":"1d737ecdddede0ece99992f4e8dea743","version":"1.6.0","vendor":{"version":"8.3","name":"Debian"}}
 ```
+
+## Operating the PFC behind a firewall
+
+**A big thanks to Mickael Crozes for introducing me to the concepts in this section!**
+
+Operating the PFC with Alexa behind a firewall may be impossible if you can't open the required ports so that the AWS lambda function can communicate with the PFC's REST APIs. This can be a typical problem with corporate firewalls for example. A good solution is to use [SSH port forwarding](https://www.ssh.com/ssh/tunneling/example) using an EC2 proxy. Here are the steps to do this.
+
+1. Create a VPC with Public and Private Subnets (NAT) as described [here](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html). Make sure to enable auto-assign public IPv4 addresses for any instance launched in the VPC, see [this](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/vpc-ip-addressing.html#subnet-public-ip) for more info.
+
+2. Configure the Lambda function to run in the VPC's Private Subnets. You can do this in the Lambda Network Configuration section of the console. Use the default security group for the VPC.
+
+3. Set the PFC SSH parameters *ServerAliveInterval* and *ServerAliveCountMax* with non-default values to avoid SSH timeouts. See [this](https://unix.stackexchange.com/questions/3026/what-options-serveraliveinterval-and-clientaliveinterval-in-sshd-config-exac) for details. I use ServerAliveInterval = 30 and ServerAliveCountMax = 6. 
+
+4. Launch an EC2 instance in the VPC's Public Subnet, configure it for tunneling, and start a SSH forwarding session on the PFC. See [these bash scripts](https://gist.github.com/goruck/89231f9d8a73f84245a713216c9b765a) for the associated AWS CLI commands.
 
 ## List of Modifications done to Openag_Brain for integration with Alexa (including stablity fixes)
 
