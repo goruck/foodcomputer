@@ -339,11 +339,11 @@ $ curl --cacert ca.crt --key client.key --cert client.crt https://external-ip-ad
 
 Operating the PFC with Alexa behind a firewall may be impossible if you can't open the required ports so that the AWS lambda function can communicate with the PFC's REST APIs. This can be a typical problem with corporate firewalls for example. A good solution is to use [SSH port forwarding](https://www.ssh.com/ssh/tunneling/example) using an EC2 proxy. Here are the steps to do this.
 
-1. Create a VPC with Public and Private Subnets (NAT) as described [here](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html). Make sure to enable auto-assign public IPv4 addresses for any instance launched in the VPC, see [this](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/vpc-ip-addressing.html#subnet-public-ip) for more info.
+1. [Create a VPC with Public and Private Subnets (NAT)](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html). Make sure to enable auto-assignment of public IPv4 addresses for any instance launched in the VPC, see [the AWS VPC documentation](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/vpc-ip-addressing.html#subnet-public-ip) for more info.
 
-2. Configure the Lambda function to run in the VPC's Private Subnets. You can do this in the Lambda Network Configuration section of the console. Use the default security group for the VPC.
+2. Configure the Lambda function to run in the VPC's Private Subnet(s) and to use the VPC default security group created in Step 1 above. You can do this in the Lambda Network Configuration section of the console.
 
-3. Set the PFC SSH parameters *ServerAliveInterval* and *ServerAliveCountMax* with non-default values to avoid SSH timeouts. See [this](https://unix.stackexchange.com/questions/3026/what-options-serveraliveinterval-and-clientaliveinterval-in-sshd-config-exac) for details. I use ServerAliveInterval = 30 and ServerAliveCountMax = 6. 
+3. Set the PFC SSH parameters *ServerAliveInterval* and *ServerAliveCountMax* with non-default values to avoid SSH timeouts. I use ServerAliveInterval = 30 and ServerAliveCountMax = 6. See [this Stack Exchange article](https://unix.stackexchange.com/questions/3026/what-options-serveraliveinterval-and-clientaliveinterval-in-sshd-config-exac) for details.
 
 4. Launch an EC2 instance in the VPC's Public Subnet, configure it for tunneling, and start a SSH forwarding session on the PFC. See [these bash scripts](https://gist.github.com/goruck/89231f9d8a73f84245a713216c9b765a) for the associated AWS CLI commands. Note that the EC2 instance needs to use the same security group as the Lambda function (see Step 2 above). 
 
